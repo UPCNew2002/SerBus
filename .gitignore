@@ -40,3 +40,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Supabase credentials (NEVER commit)
+SUPABASE_CREDENTIALS.txt
+.env.supabase
