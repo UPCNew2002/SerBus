@@ -44,18 +44,22 @@ export default function LoginScreen() {
 
     try {
       // 1. Iniciar sesión con Supabase
+      console.log('🔐 Intentando login con:', username);
       const session = await signIn(username.trim(), password);
 
       if (!session) {
         Alert.alert(
           'Error de Autenticación',
-          'Usuario o contraseña incorrectos.\n\nUsuarios disponibles:\n• superadmin\n• jperez\n• mgarcia'
+          'Usuario o contraseña incorrectos.\n\nUsuarios disponibles:\n• jperez / Admin123!\n• mgarcia / Trabajo123!'
         );
         setLoading(false);
         return;
       }
 
+      console.log('✅ Sesión obtenida:', session.user.email);
+
       // 2. Obtener perfil completo del usuario
+      console.log('👤 Obteniendo perfil...');
       const perfil = await getPerfilUsuario();
 
       if (!perfil) {
@@ -64,27 +68,16 @@ export default function LoginScreen() {
         return;
       }
 
-      // 3. Obtener datos de la empresa si tiene una
+      console.log('✅ Perfil obtenido:', perfil);
+
+      // 3. Usar datos básicos de empresa por ahora (sin consulta adicional)
       let empresaData = null;
       if (perfil.empresa_id) {
-        // Aquí puedes hacer una consulta a la tabla empresas
-        // Por ahora usamos datos mock basados en el empresa_id
-        const { data: empresas, error } = await supabase
-          .from('empresas')
-          .select('*')
-          .eq('id', perfil.empresa_id)
-          .single();
-
-        if (!error && empresas) {
-          empresaData = empresas;
-        } else {
-          // Fallback con datos básicos
-          empresaData = {
-            id: perfil.empresa_id,
-            nombre: 'Transportes ABC',
-            ruc: '20123456789',
-          };
-        }
+        empresaData = {
+          id: perfil.empresa_id,
+          nombre: 'Transportes ABC',
+          ruc: '20123456789',
+        };
       }
 
       // 4. Construir userData compatible con tu authStore
@@ -97,7 +90,7 @@ export default function LoginScreen() {
           activo: perfil.activo,
         },
         empresa: empresaData,
-        token: session.access_token, // Token real de Supabase
+        token: session.access_token,
       };
 
       // 5. Guardar en authStore (esto navegará automáticamente)
@@ -105,8 +98,9 @@ export default function LoginScreen() {
 
       console.log('✅ Login exitoso:', userData);
     } catch (error) {
-      console.error('❌ Error en login:', error);
-      Alert.alert('Error', 'Ocurrió un error al iniciar sesión. Intenta nuevamente.');
+      console.error('❌ Error completo en login:', error);
+      console.error('❌ Error stack:', error.stack);
+      Alert.alert('Error', 'Ocurrió un error al iniciar sesión: ' + error.message);
     } finally {
       setLoading(false);
     }
