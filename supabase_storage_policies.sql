@@ -26,7 +26,7 @@ USING (
     get_user_rol() = 'super_admin'
     -- Admin/Trabajador ven solo archivos de SU empresa
     OR (
-      storage.foldername(name)[1] = 'empresa-' || get_user_empresa_id()::TEXT
+      split_part(name, '/', 1) = 'empresa-' || get_user_empresa_id()::TEXT
     )
   )
 );
@@ -45,7 +45,7 @@ WITH CHECK (
     -- Admin/Trabajador pueden subir en carpeta de SU empresa
     OR (
       (get_user_rol() = 'admin' OR get_user_rol() = 'trabajador')
-      AND storage.foldername(name)[1] = 'empresa-' || get_user_empresa_id()::TEXT
+      AND split_part(name, '/', 1) = 'empresa-' || get_user_empresa_id()::TEXT
     )
   )
 );
@@ -64,7 +64,7 @@ USING (
     -- Solo Admin puede actualizar archivos de SU empresa
     OR (
       get_user_rol() = 'admin'
-      AND storage.foldername(name)[1] = 'empresa-' || get_user_empresa_id()::TEXT
+      AND split_part(name, '/', 1) = 'empresa-' || get_user_empresa_id()::TEXT
     )
   )
 );
@@ -83,7 +83,7 @@ USING (
     -- Solo Admin puede eliminar archivos de SU empresa
     OR (
       get_user_rol() = 'admin'
-      AND storage.foldername(name)[1] = 'empresa-' || get_user_empresa_id()::TEXT
+      AND split_part(name, '/', 1) = 'empresa-' || get_user_empresa_id()::TEXT
     )
   )
 );
@@ -102,14 +102,15 @@ USING (
 --
 -- ═══════════════════════════════════════════════════════
 --
--- EXPLICACIÓN DE storage.foldername():
+-- EXPLICACIÓN DE split_part():
 --
 -- Si el path es: empresa-1/ot-001/foto.jpg
--- storage.foldername(name) devuelve: ['empresa-1', 'ot-001']
--- storage.foldername(name)[1] devuelve: 'empresa-1'
+-- split_part(name, '/', 1) devuelve: 'empresa-1'
+-- split_part(name, '/', 2) devuelve: 'ot-001'
+-- split_part(name, '/', 3) devuelve: 'foto.jpg'
 --
 -- Entonces comparamos:
---   'empresa-1' = 'empresa-' || get_user_empresa_id()::TEXT
+--   split_part(name, '/', 1) = 'empresa-' || get_user_empresa_id()::TEXT
 --
 -- Si el usuario tiene empresa_id = 1, entonces:
 --   'empresa-1' = 'empresa-1' ✅ (acceso permitido)
