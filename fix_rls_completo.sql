@@ -151,62 +151,44 @@ USING (
 );
 
 -- ═══════════════════════════════════════════════════════
--- TABLA: trabajos
+-- TABLA: trabajos (CATÁLOGO GLOBAL - sin empresa_id)
 -- ═══════════════════════════════════════════════════════
 
--- SELECT: Super admin ve todo, otros ven su empresa
+-- SELECT: Cualquier usuario autenticado puede ver trabajos (catálogo común)
 CREATE POLICY "select_trabajos"
 ON trabajos FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM perfiles p
-    WHERE p.id = auth.uid()
-    AND (
-      p.rol = 'super_admin'
-      OR p.empresa_id = trabajos.empresa_id
-    )
-  )
-);
+USING (auth.uid() IS NOT NULL);
 
--- INSERT: Super admin o admin
+-- INSERT: Solo super_admin o admin
 CREATE POLICY "insert_trabajos"
 ON trabajos FOR INSERT
 WITH CHECK (
   EXISTS (
     SELECT 1 FROM perfiles p
     WHERE p.id = auth.uid()
-    AND (
-      p.rol = 'super_admin'
-      OR (p.rol = 'admin' AND p.empresa_id = trabajos.empresa_id)
-    )
+    AND (p.rol = 'super_admin' OR p.rol = 'admin')
   )
 );
 
--- UPDATE: Super admin o admin
+-- UPDATE: Solo super_admin o admin
 CREATE POLICY "update_trabajos"
 ON trabajos FOR UPDATE
 USING (
   EXISTS (
     SELECT 1 FROM perfiles p
     WHERE p.id = auth.uid()
-    AND (
-      p.rol = 'super_admin'
-      OR (p.rol = 'admin' AND p.empresa_id = trabajos.empresa_id)
-    )
+    AND (p.rol = 'super_admin' OR p.rol = 'admin')
   )
 );
 
--- DELETE: Super admin o admin
+-- DELETE: Solo super_admin o admin
 CREATE POLICY "delete_trabajos"
 ON trabajos FOR DELETE
 USING (
   EXISTS (
     SELECT 1 FROM perfiles p
     WHERE p.id = auth.uid()
-    AND (
-      p.rol = 'super_admin'
-      OR (p.rol = 'admin' AND p.empresa_id = trabajos.empresa_id)
-    )
+    AND (p.rol = 'super_admin' OR p.rol = 'admin')
   )
 );
 
