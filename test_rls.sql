@@ -71,7 +71,7 @@ ORDER BY tablename;
 CREATE OR REPLACE FUNCTION test_rls_como_usuario(email_usuario TEXT)
 RETURNS TABLE(
   test_descripcion TEXT,
-  placa TEXT,
+  placa VARCHAR(10),
   empresa_id INTEGER,
   puede_ver BOOLEAN
 ) AS $$
