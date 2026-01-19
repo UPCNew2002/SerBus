@@ -14,25 +14,9 @@
 -- ═══════════════════════════════════════════════════════
 
 -- ───────────────────────────────────────────────────────
--- PASO 1: ELIMINAR FUNCIONES HELPER PROBLEMÁTICAS
+-- PASO 1: ELIMINAR TODAS LAS POLÍTICAS EXISTENTES PRIMERO
 -- ───────────────────────────────────────────────────────
-
-DROP FUNCTION IF EXISTS get_user_rol();
-DROP FUNCTION IF EXISTS get_user_empresa_id();
-
--- ───────────────────────────────────────────────────────
--- PASO 2: DESACTIVAR RLS TEMPORALMENTE (para limpiar)
--- ───────────────────────────────────────────────────────
-
-ALTER TABLE perfiles DISABLE ROW LEVEL SECURITY;
-ALTER TABLE empresas DISABLE ROW LEVEL SECURITY;
-ALTER TABLE trabajos DISABLE ROW LEVEL SECURITY;
-ALTER TABLE buses DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ots DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ots_trabajos DISABLE ROW LEVEL SECURITY;
-
--- ───────────────────────────────────────────────────────
--- PASO 3: ELIMINAR TODAS LAS POLÍTICAS EXISTENTES
+-- (Necesitamos eliminar políticas antes de funciones porque dependen de ellas)
 -- ───────────────────────────────────────────────────────
 
 -- Perfiles
@@ -78,7 +62,14 @@ DROP POLICY IF EXISTS "update_ots_evidencias" ON storage.objects;
 DROP POLICY IF EXISTS "delete_ots_evidencias" ON storage.objects;
 
 -- ───────────────────────────────────────────────────────
--- PASO 4: REACTIVAR RLS
+-- PASO 2: AHORA SÍ ELIMINAR FUNCIONES HELPER (después de políticas)
+-- ───────────────────────────────────────────────────────
+
+DROP FUNCTION IF EXISTS get_user_rol() CASCADE;
+DROP FUNCTION IF EXISTS get_user_empresa_id() CASCADE;
+
+-- ───────────────────────────────────────────────────────
+-- PASO 3: ASEGURAR QUE RLS ESTÁ HABILITADO
 -- ───────────────────────────────────────────────────────
 
 ALTER TABLE perfiles ENABLE ROW LEVEL SECURITY;
@@ -89,7 +80,7 @@ ALTER TABLE ots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ots_trabajos ENABLE ROW LEVEL SECURITY;
 
 -- ───────────────────────────────────────────────────────
--- PASO 5: CREAR POLÍTICAS NUEVAS (SIN LOOPS)
+-- PASO 4: CREAR POLÍTICAS NUEVAS (SIN LOOPS)
 -- ───────────────────────────────────────────────────────
 
 -- ═══════════════════════════════════════════════════════
