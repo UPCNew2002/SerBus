@@ -15,7 +15,7 @@ export PGPASSWORD="%Contraseña25"
 # Construir host y user
 PGHOST="db.${PROJECT_ID}.supabase.co"
 PGPORT="5432"
-PGUSER="postgres.${PROJECT_ID}"
+PGUSER="postgres"
 PGDATABASE="postgres"
 
 echo "═══════════════════════════════════════════════════════"
