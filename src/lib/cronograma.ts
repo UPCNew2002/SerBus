@@ -6,13 +6,13 @@
 // cronograma de mantenimiento de buses
 //
 // ═══════════════════════════════════════════════════════
-
+ 
 import { supabase } from './supabase';
-
+ 
 // ───────────────────────────────────────────────────────
 // TIPOS
 // ───────────────────────────────────────────────────────
-
+ 
 export interface ProximoMantenimiento {
   bus_id: number;
   placa: string;
@@ -21,7 +21,7 @@ export interface ProximoMantenimiento {
   km_restantes: number;
   necesita_mantenimiento: boolean;
 }
-
+ 
 export interface BusNecesitaMantenimiento {
   bus_id: number;
   placa: string;
@@ -32,7 +32,7 @@ export interface BusNecesitaMantenimiento {
   km_restantes: number;
   urgencia: 'URGENTE' | 'PRONTO' | 'NORMAL';
 }
-
+ 
 export interface EstadisticasOTs {
   total_ots: number;
   ots_pendientes: number;
@@ -41,7 +41,7 @@ export interface EstadisticasOTs {
   ots_canceladas: number;
   tiempo_promedio_dias: number;
 }
-
+ 
 export interface HistorialMantenimiento {
   ot_id: number;
   numero_ot: string;
@@ -52,11 +52,11 @@ export interface HistorialMantenimiento {
   cantidad_trabajos: number;
   dias_duracion: number;
 }
-
+ 
 // ───────────────────────────────────────────────────────
 // FUNCIONES
 // ───────────────────────────────────────────────────────
-
+ 
 /**
  * Generar número de OT automático
  *
@@ -72,19 +72,19 @@ export async function generarNumeroOT(empresaId: number): Promise<string | null>
     const { data, error } = await supabase.rpc('generar_numero_ot', {
       p_empresa_id: empresaId,
     });
-
+ 
     if (error) {
       console.error('Error generando número de OT:', error.message);
       return null;
     }
-
+ 
     return data;
   } catch (error) {
     console.error('Error generando número de OT:', error);
     return null;
   }
 }
-
+ 
 /**
  * Calcular próximo mantenimiento de un bus
  *
@@ -104,19 +104,19 @@ export async function calcularProximoMantenimiento(
     const { data, error } = await supabase.rpc('calcular_proximo_mantenimiento', {
       p_bus_id: busId,
     });
-
+ 
     if (error) {
       console.error('Error calculando próximo mantenimiento:', error.message);
       return null;
     }
-
+ 
     return data && data.length > 0 ? data[0] : null;
   } catch (error) {
     console.error('Error calculando próximo mantenimiento:', error);
     return null;
   }
 }
-
+ 
 /**
  * Obtener buses que necesitan mantenimiento
  *
@@ -134,19 +134,19 @@ export async function busesNecesitanMantenimiento(
     const { data, error } = await supabase.rpc('buses_necesitan_mantenimiento', {
       p_empresa_id: empresaId,
     });
-
+ 
     if (error) {
       console.error('Error obteniendo buses:', error.message);
       return [];
     }
-
+ 
     return data || [];
   } catch (error) {
     console.error('Error obteniendo buses:', error);
     return [];
   }
 }
-
+ 
 /**
  * Obtener estadísticas de OTs de una empresa
  *
@@ -164,19 +164,19 @@ export async function obtenerEstadisticasOTs(
     const { data, error } = await supabase.rpc('estadisticas_ots', {
       p_empresa_id: empresaId,
     });
-
+ 
     if (error) {
       console.error('Error obteniendo estadísticas:', error.message);
       return null;
     }
-
+ 
     return data && data.length > 0 ? data[0] : null;
   } catch (error) {
     console.error('Error obteniendo estadísticas:', error);
     return null;
   }
 }
-
+ 
 /**
  * Obtener detalle completo de una OT
  *
@@ -193,19 +193,19 @@ export async function obtenerDetalleOT(otId: number): Promise<any | null> {
     const { data, error } = await supabase.rpc('detalle_ot', {
       p_ot_id: otId,
     });
-
+ 
     if (error) {
       console.error('Error obteniendo detalle de OT:', error.message);
       return null;
     }
-
+ 
     return data;
   } catch (error) {
     console.error('Error obteniendo detalle de OT:', error);
     return null;
   }
 }
-
+ 
 /**
  * Obtener historial de mantenimiento de un bus
  *
@@ -223,23 +223,23 @@ export async function obtenerHistorialMantenimiento(
     const { data, error } = await supabase.rpc('historial_mantenimiento_bus', {
       p_bus_id: busId,
     });
-
+ 
     if (error) {
       console.error('Error obteniendo historial:', error.message);
       return [];
     }
-
+ 
     return data || [];
   } catch (error) {
     console.error('Error obteniendo historial:', error);
     return [];
   }
 }
-
+ 
 // ───────────────────────────────────────────────────────
 // FUNCIONES CRUD BÁSICAS
 // ───────────────────────────────────────────────────────
-
+ 
 /**
  * Crear una nueva OT
  *
@@ -280,12 +280,12 @@ export async function crearOT(datos: {
       })
       .select()
       .single();
-
+ 
     if (otError) {
       console.error('Error creando OT:', otError.message);
       return null;
     }
-
+ 
     // Agregar trabajos si se especificaron
     if (datos.trabajos_ids && datos.trabajos_ids.length > 0) {
       const trabajosData = datos.trabajos_ids.map(trabajoId => ({
@@ -293,23 +293,23 @@ export async function crearOT(datos: {
         trabajo_id: trabajoId,
         estado: 'pendiente',
       }));
-
+ 
       const { error: trabajosError } = await supabase
         .from('ots_trabajos')
         .insert(trabajosData);
-
+ 
       if (trabajosError) {
         console.error('Error agregando trabajos a OT:', trabajosError.message);
       }
     }
-
+ 
     return ot;
   } catch (error) {
     console.error('Error creando OT:', error);
     return null;
   }
 }
-
+ 
 /**
  * Actualizar estado de una OT
  *
@@ -330,24 +330,24 @@ export async function actualizarEstadoOT(
     if (fechaFin) {
       updateData.fecha_fin = fechaFin;
     }
-
+ 
     const { error } = await supabase
       .from('ots')
       .update(updateData)
       .eq('id', otId);
-
+ 
     if (error) {
       console.error('Error actualizando estado de OT:', error.message);
       return false;
     }
-
+ 
     return true;
   } catch (error) {
     console.error('Error actualizando estado de OT:', error);
     return false;
   }
 }
-
+ 
 /**
  * Actualizar kilometraje de un bus
  *
@@ -363,12 +363,12 @@ export async function actualizarKilometraje(busId: number, kilometraje: number) 
       .from('buses')
       .update({ kilometraje_actual: kilometraje })
       .eq('id', busId);
-
+ 
     if (error) {
       console.error('Error actualizando kilometraje:', error.message);
       return false;
     }
-
+ 
     return true;
   } catch (error) {
     console.error('Error actualizando kilometraje:', error);
