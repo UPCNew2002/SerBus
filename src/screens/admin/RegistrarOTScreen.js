@@ -35,10 +35,10 @@ export default function RegistrarOTScreen({ navigation }) {
   const [precioServicios, setPrecioServicios] = useState('');
   const [evidencia, setEvidencia] = useState(null);
   const [productos, setProductos] = useState([]);
-const [showAddProducto, setShowAddProducto] = useState(false);
-const [productoNombre, setProductoNombre] = useState('');
-const [productoCantidad, setProductoCantidad] = useState('');
-const [productoPrecio, setProductoPrecio] = useState('');
+  const [showAddProducto, setShowAddProducto] = useState(false);
+  const [productoNombre, setProductoNombre] = useState('');
+  const [productoCantidad, setProductoCantidad] = useState('');
+  const [productoPrecio, setProductoPrecio] = useState('');
   const [loading, setLoading] = useState(false);
   const [generandoNumeroOT, setGenerandoNumeroOT] = useState(false);
 
@@ -109,48 +109,48 @@ const [productoPrecio, setProductoPrecio] = useState('');
   };
 
   // Agregar producto
-const agregarProducto = () => {
-  if (!productoNombre.trim()) {
-    Alert.alert('Error', 'El nombre del producto es obligatorio');
-    return;
-  }
-  if (!productoCantidad || parseInt(productoCantidad) <= 0) {
-    Alert.alert('Error', 'La cantidad debe ser mayor a 0');
-    return;
-  }
-  if (!productoPrecio || parseFloat(productoPrecio) <= 0) {
-    Alert.alert('Error', 'El precio debe ser mayor a 0');
-    return;
-  }
+  const agregarProducto = () => {
+    if (!productoNombre.trim()) {
+      Alert.alert('Error', 'El nombre del producto es obligatorio');
+      return;
+    }
+    if (!productoCantidad || parseInt(productoCantidad) <= 0) {
+      Alert.alert('Error', 'La cantidad debe ser mayor a 0');
+      return;
+    }
+    if (!productoPrecio || parseFloat(productoPrecio) <= 0) {
+      Alert.alert('Error', 'El precio debe ser mayor a 0');
+      return;
+    }
 
-  const nuevoProducto = {
-    id: Date.now(),
-    nombre: productoNombre.trim(),
-    cantidad: parseInt(productoCantidad),
-    precio: parseFloat(productoPrecio),
+    const nuevoProducto = {
+      id: Date.now(),
+      nombre: productoNombre.trim(),
+      cantidad: parseInt(productoCantidad),
+      precio: parseFloat(productoPrecio),
+    };
+
+    setProductos([...productos, nuevoProducto]);
+    setProductoNombre('');
+    setProductoCantidad('');
+    setProductoPrecio('');
+    setShowAddProducto(false);
   };
 
-  setProductos([...productos, nuevoProducto]);
-  setProductoNombre('');
-  setProductoCantidad('');
-  setProductoPrecio('');
-  setShowAddProducto(false);
-};
+  // Eliminar producto
+  const eliminarProducto = (id) => {
+    setProductos(productos.filter((p) => p.id !== id));
+  };
 
-// Eliminar producto
-const eliminarProducto = (id) => {
-  setProductos(productos.filter((p) => p.id !== id));
-};
-
-// Calcular total de productos
-const calcularTotalProductos = () => {
-  return productos.reduce((total, p) => total + p.cantidad * p.precio, 0);
-};
+  // Calcular total de productos
+  const calcularTotalProductos = () => {
+    return productos.reduce((total, p) => total + p.cantidad * p.precio, 0);
+  };
 
   // Seleccionar imagen
   const seleccionarImagen = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Permiso denegado', 'Se necesita acceso a la galería');
       return;
@@ -171,7 +171,7 @@ const calcularTotalProductos = () => {
   // Tomar foto
   const tomarFoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Permiso denegado', 'Se necesita acceso a la cámara');
       return;
@@ -227,9 +227,10 @@ const calcularTotalProductos = () => {
     }
 
     if (!precioServicios || parseFloat(precioServicios) <= 0) {
-  Alert.alert('Error', 'El precio de servicios debe ser mayor a 0');
-  return;
-}
+      Alert.alert('Error', 'El precio de servicios debe ser mayor a 0');
+      return;
+    }
+
     if (!evidencia) {
       Alert.alert('Error', 'La foto de evidencia es obligatoria');
       return;
@@ -238,35 +239,36 @@ const calcularTotalProductos = () => {
     // Guardar
     setLoading(true);
     setTimeout(() => {
-          const totalProductos = calcularTotalProductos();  // ✅ Aquí sí está bien
-  const totalServicios = parseFloat(precioServicios);
-  const precioTotal = totalProductos + totalServicios;
+      const totalProductos = calcularTotalProductos();
+      const totalServicios = parseFloat(precioServicios);
+      const precioTotal = totalProductos + totalServicios;
+
       agregarOT({
-  numeroOT: numeroOT.toUpperCase(),
-  fecha,
-  placa: placa.toUpperCase(),
-  vin: vin.toUpperCase(),
-  kilometraje: kilometraje ? parseInt(kilometraje) : null,
-  trabajos: trabajosSeleccionados,
-  servicios: servicios.trim(),
-  productos: productos,
-  precioProductos: totalProductos,
-  precioServicios: totalServicios,
-  precioTotal: precioTotal,
-  evidencia: evidencia.uri,
-  empresaId: empresa?.id || 1,
-});
-Alert.alert(
-  '✅ OT Registrada',
-  `OT ${numeroOT} registrada correctamente\n\nProductos: S/ ${totalProductos.toFixed(2)}\nServicios: S/ ${totalServicios.toFixed(2)}\nTotal: S/ ${precioTotal.toFixed(2)}\n\n${
-    kilometraje && trabajosSeleccionados.some((t) => t.entraCronograma)
-      ? '📅 El cronograma se actualizará automáticamente'
-      : '📋 Registrado solo en historial'
-  }`,
-  [{ text: 'OK', onPress: () => navigation.goBack() }]
-);
+        numeroOT: numeroOT.toUpperCase(),
+        fecha,
+        placa: placa.toUpperCase(),
+        vin: vin.toUpperCase(),
+        kilometraje: kilometraje ? parseInt(kilometraje) : null,
+        trabajos: trabajosSeleccionados,
+        servicios: servicios.trim(),
+        productos: productos,
+        precioProductos: totalProductos,
+        precioServicios: totalServicios,
+        precioTotal: precioTotal,
+        evidencia: evidencia.uri,
+        empresaId: empresa?.id || 1,
+      });
+
+      Alert.alert(
+        '✅ OT Registrada',
+        `OT ${numeroOT} registrada correctamente\n\nProductos: S/ ${totalProductos.toFixed(2)}\nServicios: S/ ${totalServicios.toFixed(2)}\nTotal: S/ ${precioTotal.toFixed(2)}\n\n${
+          kilometraje && trabajosSeleccionados.some((t) => t.entraCronograma)
+            ? '📅 El cronograma se actualizará automáticamente'
+            : '📋 Registrado solo en historial'
+        }`,
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
       setLoading(false);
-      
     }, 1500);
   };
 
@@ -502,171 +504,171 @@ Alert.alert(
           />
         </View>
 
-{/* SECCIÓN: PRODUCTOS */}
-<Text style={styles.sectionTitle}>PRODUCTOS UTILIZADOS (Opcional)</Text>
+        {/* SECCIÓN: PRODUCTOS */}
+        <Text style={styles.sectionTitle}>PRODUCTOS UTILIZADOS (Opcional)</Text>
 
-{/* Lista de productos */}
-{productos.length > 0 && (
-  <View style={styles.productosLista}>
-    {productos.map((producto) => (
-      <View key={producto.id} style={styles.productoCard}>
-        <View style={styles.productoInfo}>
-          <Text style={styles.productoNombre}>{producto.nombre}</Text>
-          <Text style={styles.productoDetalle}>
-            Cantidad: {producto.cantidad} • S/ {producto.precio.toFixed(2)} c/u
-          </Text>
-          <Text style={styles.productoTotal}>
-            Total: S/ {(producto.cantidad * producto.precio).toFixed(2)}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.productoDelete}
-          onPress={() => eliminarProducto(producto.id)}
-        >
-          <Ionicons name="trash" size={20} color={COLORS.statusDanger} />
-        </TouchableOpacity>
-      </View>
-    ))}
-    
-    {/* Total de productos */}
-    <View style={styles.productosTotalBox}>
-      <Text style={styles.productosTotalLabel}>Total Productos:</Text>
-      <Text style={styles.productosTotalValue}>
-        S/ {calcularTotalProductos().toFixed(2)}
-      </Text>
-    </View>
-  </View>
-)}
+        {/* Lista de productos */}
+        {productos.length > 0 && (
+          <View style={styles.productosLista}>
+            {productos.map((producto) => (
+              <View key={producto.id} style={styles.productoCard}>
+                <View style={styles.productoInfo}>
+                  <Text style={styles.productoNombre}>{producto.nombre}</Text>
+                  <Text style={styles.productoDetalle}>
+                    Cantidad: {producto.cantidad} • S/ {producto.precio.toFixed(2)} c/u
+                  </Text>
+                  <Text style={styles.productoTotal}>
+                    Total: S/ {(producto.cantidad * producto.precio).toFixed(2)}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.productoDelete}
+                  onPress={() => eliminarProducto(producto.id)}
+                >
+                  <Ionicons name="trash" size={20} color={COLORS.statusDanger} />
+                </TouchableOpacity>
+              </View>
+            ))}
 
-{/* Botón agregar producto */}
-{!showAddProducto ? (
-  <TouchableOpacity
-    style={styles.addProductoButton}
-    onPress={() => setShowAddProducto(true)}
-  >
-    <Ionicons name="add-circle" size={24} color={COLORS.accent} />
-    <Text style={styles.addProductoButtonText}>Agregar Producto</Text>
-  </TouchableOpacity>
-) : (
-  <View style={styles.addProductoForm}>
-    {/* Nombre producto */}
-    <View style={styles.inputGroup}>
-      <Text style={styles.label}>NOMBRE DEL PRODUCTO *</Text>
-      <View style={styles.inputContainer}>
-        <View style={styles.inputIconBox}>
-          <Ionicons name="cube" size={20} color={COLORS.text} />
-        </View>
-        <TextInput
-          style={styles.input}
-          placeholder="Ej: Aceite 15W40, Filtro de aire"
-          placeholderTextColor={COLORS.textMuted}
-          value={productoNombre}
-          onChangeText={setProductoNombre}
-          autoCapitalize="words"
-        />
-      </View>
-    </View>
+            {/* Total de productos */}
+            <View style={styles.productosTotalBox}>
+              <Text style={styles.productosTotalLabel}>Total Productos:</Text>
+              <Text style={styles.productosTotalValue}>
+                S/ {calcularTotalProductos().toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        )}
 
-    {/* Cantidad y Precio */}
-    <View style={styles.productoRow}>
-      <View style={[styles.inputGroup, { flex: 1 }]}>
-        <Text style={styles.label}>CANTIDAD *</Text>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="0"
-            placeholderTextColor={COLORS.textMuted}
-            value={productoCantidad}
-            onChangeText={(text) => setProductoCantidad(text.replace(/[^0-9]/g, ''))}
-            keyboardType="numeric"
-          />
-        </View>
-      </View>
+        {/* Botón agregar producto */}
+        {!showAddProducto ? (
+          <TouchableOpacity
+            style={styles.addProductoButton}
+            onPress={() => setShowAddProducto(true)}
+          >
+            <Ionicons name="add-circle" size={24} color={COLORS.accent} />
+            <Text style={styles.addProductoButtonText}>Agregar Producto</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.addProductoForm}>
+            {/* Nombre producto */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>NOMBRE DEL PRODUCTO *</Text>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIconBox}>
+                  <Ionicons name="cube" size={20} color={COLORS.text} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ej: Aceite 15W40, Filtro de aire"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={productoNombre}
+                  onChangeText={setProductoNombre}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
 
-      <View style={[styles.inputGroup, { flex: 1 }]}>
-        <Text style={styles.label}>PRECIO UNIT. *</Text>
-        <View style={styles.inputContainer}>
-          <Text style={styles.currencySymbolSmall}>S/</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0.00"
-            placeholderTextColor={COLORS.textMuted}
-            value={productoPrecio}
-            onChangeText={setProductoPrecio}
-            keyboardType="decimal-pad"
-          />
-        </View>
-      </View>
-    </View>
+            {/* Cantidad y Precio */}
+            <View style={styles.productoRow}>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>CANTIDAD *</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="0"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={productoCantidad}
+                    onChangeText={(text) => setProductoCantidad(text.replace(/[^0-9]/g, ''))}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
 
-    {/* Botones */}
-    <View style={styles.productoFormButtons}>
-      <TouchableOpacity
-        style={styles.cancelProductoButton}
-        onPress={() => {
-          setShowAddProducto(false);
-          setProductoNombre('');
-          setProductoCantidad('');
-          setProductoPrecio('');
-        }}
-      >
-        <Text style={styles.cancelProductoButtonText}>Cancelar</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.saveProductoButton} onPress={agregarProducto}>
-        <Ionicons name="checkmark-circle" size={20} color={COLORS.text} />
-        <Text style={styles.saveProductoButtonText}>Agregar</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-)}
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>PRECIO UNIT. *</Text>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.currencySymbolSmall}>S/</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="0.00"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={productoPrecio}
+                    onChangeText={setProductoPrecio}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Botones */}
+            <View style={styles.productoFormButtons}>
+              <TouchableOpacity
+                style={styles.cancelProductoButton}
+                onPress={() => {
+                  setShowAddProducto(false);
+                  setProductoNombre('');
+                  setProductoCantidad('');
+                  setProductoPrecio('');
+                }}
+              >
+                <Text style={styles.cancelProductoButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveProductoButton} onPress={agregarProducto}>
+                <Ionicons name="checkmark-circle" size={20} color={COLORS.text} />
+                <Text style={styles.saveProductoButtonText}>Agregar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* SECCIÓN: PRECIOS */}
-<Text style={styles.sectionTitle}>PRECIOS</Text>
+        <Text style={styles.sectionTitle}>PRECIOS</Text>
 
-{/* Resumen de productos */}
-<View style={styles.precioResumenBox}>
-  <View style={styles.precioResumenRow}>
-    <Ionicons name="cube" size={18} color={COLORS.textMuted} />
-    <Text style={styles.precioResumenLabel}>Productos:</Text>
-    <Text style={styles.precioResumenValue}>
-      S/ {calcularTotalProductos().toFixed(2)}
-    </Text>
-  </View>
-</View>
+        {/* Resumen de productos */}
+        <View style={styles.precioResumenBox}>
+          <View style={styles.precioResumenRow}>
+            <Ionicons name="cube" size={18} color={COLORS.textMuted} />
+            <Text style={styles.precioResumenLabel}>Productos:</Text>
+            <Text style={styles.precioResumenValue}>
+              S/ {calcularTotalProductos().toFixed(2)}
+            </Text>
+          </View>
+        </View>
 
-{/* Precio de servicios */}
-<View style={styles.inputGroup}>
-  <Text style={styles.label}>PRECIO DE SERVICIOS (Mano de Obra) *</Text>
-  <View style={styles.inputContainer}>
-    <View style={styles.inputIconBox}>
-      <Ionicons name="build" size={20} color={COLORS.text} />
-    </View>
-    <Text style={styles.currencySymbol}>S/</Text>
-    <TextInput
-      style={styles.input}
-      placeholder="0.00"
-      placeholderTextColor={COLORS.textMuted}
-      value={precioServicios}
-      onChangeText={setPrecioServicios}
-      keyboardType="decimal-pad"
-    />
-  </View>
-  <Text style={styles.helperText}>Solo mano de obra, sin productos</Text>
-</View>
+        {/* Precio de servicios */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>PRECIO DE SERVICIOS (Mano de Obra) *</Text>
+          <View style={styles.inputContainer}>
+            <View style={styles.inputIconBox}>
+              <Ionicons name="build" size={20} color={COLORS.text} />
+            </View>
+            <Text style={styles.currencySymbol}>S/</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor={COLORS.textMuted}
+              value={precioServicios}
+              onChangeText={setPrecioServicios}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <Text style={styles.helperText}>Solo mano de obra, sin productos</Text>
+        </View>
 
-{/* Total General */}
-<View style={styles.totalGeneralBox}>
-  <View style={styles.totalGeneralRow}>
-    <Ionicons name="calculator" size={24} color={COLORS.primary} />
-    <View style={styles.totalGeneralInfo}>
-      <Text style={styles.totalGeneralLabel}>TOTAL GENERAL</Text>
-      <Text style={styles.totalGeneralSubtext}>Productos + Servicios</Text>
-    </View>
-    <Text style={styles.totalGeneralValue}>
-      S/ {(calcularTotalProductos() + (parseFloat(precioServicios) || 0)).toFixed(2)}
-    </Text>
-  </View>
-</View>
+        {/* Total General */}
+        <View style={styles.totalGeneralBox}>
+          <View style={styles.totalGeneralRow}>
+            <Ionicons name="calculator" size={24} color={COLORS.primary} />
+            <View style={styles.totalGeneralInfo}>
+              <Text style={styles.totalGeneralLabel}>TOTAL GENERAL</Text>
+              <Text style={styles.totalGeneralSubtext}>Productos + Servicios</Text>
+            </View>
+            <Text style={styles.totalGeneralValue}>
+              S/ {(calcularTotalProductos() + (parseFloat(precioServicios) || 0)).toFixed(2)}
+            </Text>
+          </View>
+        </View>
 
         {/* SECCIÓN: EVIDENCIA */}
         <Text style={styles.sectionTitle}>EVIDENCIA FOTOGRÁFICA *</Text>
@@ -896,270 +898,270 @@ const styles = StyleSheet.create({
   guardarButtonDisabled: { opacity: 0.6 },
   guardarButtonText: { color: COLORS.text, fontSize: 16, fontWeight: 'bold', letterSpacing: 1.5 },
   productosLista: { marginBottom: 20 },
-productoCard: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: COLORS.card,
-  padding: 15,
-  borderRadius: 12,
-  marginBottom: 10,
-  borderWidth: 1,
-  borderColor: COLORS.border,
-},
-productoInfo: { flex: 1 },
-productoNombre: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 5 },
-productoDetalle: { fontSize: 12, color: COLORS.textLight, marginBottom: 3 },
-productoTotal: { fontSize: 13, fontWeight: 'bold', color: COLORS.accent },
-productoDelete: {
-  width: 40,
-  height: 40,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: COLORS.backgroundLight,
-  borderRadius: 10,
-},
-productosTotalBox: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  backgroundColor: COLORS.card,
-  padding: 15,
-  borderRadius: 12,
-  borderWidth: 2,
-  borderColor: COLORS.primary,
-  marginTop: 10,
-},
-productosTotalLabel: { fontSize: 15, fontWeight: 'bold', color: COLORS.textLight },
-productosTotalValue: { fontSize: 18, fontWeight: 'bold', color: COLORS.primary },
-addProductoButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 10,
-  backgroundColor: COLORS.card,
-  padding: 15,
-  borderRadius: 12,
-  borderWidth: 2,
-  borderColor: COLORS.border,
-  borderStyle: 'dashed',
-  marginBottom: 20,
-},
-addProductoButtonText: { fontSize: 15, fontWeight: '600', color: COLORS.textLight },
-addProductoForm: {
-  backgroundColor: COLORS.card,
-  padding: 15,
-  borderRadius: 12,
-  marginBottom: 20,
-  borderWidth: 2,
-  borderColor: COLORS.accent,
-},
-productoRow: { flexDirection: 'row', gap: 10 },
-currencySymbolSmall: { fontSize: 14, fontWeight: 'bold', color: COLORS.text, marginLeft: 10 },
-productoFormButtons: { flexDirection: 'row', gap: 10, marginTop: 10 },
-cancelProductoButton: {
-  flex: 1,
-  backgroundColor: COLORS.metal,
-  padding: 12,
-  borderRadius: 10,
-  alignItems: 'center',
-},
-cancelProductoButtonText: { fontSize: 14, fontWeight: '600', color: COLORS.textLight },
-saveProductoButton: {
-  flex: 1,
-  flexDirection: 'row',
-  backgroundColor: COLORS.accent,
-  padding: 12,
-  borderRadius: 10,
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-},
-saveProductoButtonText: { fontSize: 14, fontWeight: '600', color: COLORS.text },
-precioResumenBox: {
-  backgroundColor: COLORS.card,
-  padding: 15,
-  borderRadius: 12,
-  marginBottom: 20,
-  borderWidth: 1,
-  borderColor: COLORS.border,
-},
-precioResumenRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 10,
-},
-precioResumenLabel: {
-  flex: 1,
-  fontSize: 14,
-  color: COLORS.textLight,
-  fontWeight: '600',
-},
-precioResumenValue: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: COLORS.textLight,
-},
-totalGeneralBox: {
-  backgroundColor: COLORS.primary,
-  padding: 20,
-  borderRadius: 12,
-  marginTop: 10,
-  marginBottom: 20,
-  shadowColor: COLORS.primary,
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
-  shadowRadius: 8,
-  elevation: 6,
-},
-totalGeneralRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 15,
-},
-totalGeneralInfo: {
-  flex: 1,
-},
-totalGeneralLabel: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: COLORS.text,
-  letterSpacing: 1,
-  marginBottom: 3,
-},
-totalGeneralSubtext: {
-  fontSize: 11,
-  color: COLORS.text,
-  opacity: 0.8,
-},
-totalGeneralValue: {
-  fontSize: 24,
-  fontWeight: 'bold',
-  color: COLORS.text,
-  letterSpacing: 1,
-},
-busSelector: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: COLORS.card,
-  padding: 15,
-  borderRadius: 12,
-  borderWidth: 2,
-  borderColor: COLORS.border,
-  marginBottom: 20,
-  gap: 12,
-},
-busSelectorIcon: {
-  width: 50,
-  height: 50,
-  backgroundColor: COLORS.backgroundLight,
-  borderRadius: 10,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-busSelectorContent: {
-  flex: 1,
-},
-busSelectorLabel: {
-  fontSize: 11,
-  fontWeight: 'bold',
-  color: COLORS.textLight,
-  marginBottom: 3,
-  letterSpacing: 1.2,
-},
-busSelectorValue: {
-  fontSize: 15,
-  fontWeight: '600',
-  color: COLORS.text,
-},
-busSelectorPlaceholder: {
-  fontSize: 13,
-  color: COLORS.textMuted,
-},
-modalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  justifyContent: 'flex-end',
-},
-modalContent: {
-  backgroundColor: COLORS.background,
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-  maxHeight: '80%',
-  paddingBottom: 20,
-},
-modalHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: 20,
-  borderBottomWidth: 2,
-  borderBottomColor: COLORS.border,
-},
-modalTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  color: COLORS.text,
-},
-modalLoading: {
-  padding: 40,
-  alignItems: 'center',
-},
-modalLoadingText: {
-  fontSize: 14,
-  color: COLORS.textMuted,
-  marginTop: 10,
-},
-modalEmpty: {
-  padding: 40,
-  alignItems: 'center',
-  gap: 15,
-},
-modalEmptyText: {
-  fontSize: 14,
-  color: COLORS.textMuted,
-},
-busesLista: {
-  padding: 15,
-  gap: 10,
-},
-busItem: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: COLORS.card,
-  padding: 15,
-  borderRadius: 12,
-  borderWidth: 2,
-  borderColor: COLORS.border,
-  gap: 12,
-},
-busItemSelected: {
-  borderColor: COLORS.primary,
-  backgroundColor: COLORS.backgroundLight,
-},
-busItemIcon: {
-  width: 50,
-  height: 50,
-  backgroundColor: COLORS.backgroundLight,
-  borderRadius: 10,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-busItemInfo: {
-  flex: 1,
-},
-busItemPlaca: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: COLORS.text,
-  marginBottom: 3,
-},
-busItemMarca: {
-  fontSize: 13,
-  color: COLORS.textLight,
-  marginBottom: 2,
-},
-busItemKm: {
-  fontSize: 12,
-  color: COLORS.textMuted,
-},
+  productoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  productoInfo: { flex: 1 },
+  productoNombre: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 5 },
+  productoDetalle: { fontSize: 12, color: COLORS.textLight, marginBottom: 3 },
+  productoTotal: { fontSize: 13, fontWeight: 'bold', color: COLORS.accent },
+  productoDelete: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundLight,
+    borderRadius: 10,
+  },
+  productosTotalBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    marginTop: 10,
+  },
+  productosTotalLabel: { fontSize: 15, fontWeight: 'bold', color: COLORS.textLight },
+  productosTotalValue: { fontSize: 18, fontWeight: 'bold', color: COLORS.primary },
+  addProductoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: COLORS.card,
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    marginBottom: 20,
+  },
+  addProductoButtonText: { fontSize: 15, fontWeight: '600', color: COLORS.textLight },
+  addProductoForm: {
+    backgroundColor: COLORS.card,
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: COLORS.accent,
+  },
+  productoRow: { flexDirection: 'row', gap: 10 },
+  currencySymbolSmall: { fontSize: 14, fontWeight: 'bold', color: COLORS.text, marginLeft: 10 },
+  productoFormButtons: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  cancelProductoButton: {
+    flex: 1,
+    backgroundColor: COLORS.metal,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  cancelProductoButtonText: { fontSize: 14, fontWeight: '600', color: COLORS.textLight },
+  saveProductoButton: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: COLORS.accent,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  saveProductoButtonText: { fontSize: 14, fontWeight: '600', color: COLORS.text },
+  precioResumenBox: {
+    backgroundColor: COLORS.card,
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  precioResumenRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  precioResumenLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.textLight,
+    fontWeight: '600',
+  },
+  precioResumenValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.textLight,
+  },
+  totalGeneralBox: {
+    backgroundColor: COLORS.primary,
+    padding: 20,
+    borderRadius: 12,
+    marginTop: 10,
+    marginBottom: 20,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  totalGeneralRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+  },
+  totalGeneralInfo: {
+    flex: 1,
+  },
+  totalGeneralLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    letterSpacing: 1,
+    marginBottom: 3,
+  },
+  totalGeneralSubtext: {
+    fontSize: 11,
+    color: COLORS.text,
+    opacity: 0.8,
+  },
+  totalGeneralValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    letterSpacing: 1,
+  },
+  busSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    marginBottom: 20,
+    gap: 12,
+  },
+  busSelectorIcon: {
+    width: 50,
+    height: 50,
+    backgroundColor: COLORS.backgroundLight,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  busSelectorContent: {
+    flex: 1,
+  },
+  busSelectorLabel: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.textLight,
+    marginBottom: 3,
+    letterSpacing: 1.2,
+  },
+  busSelectorValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  busSelectorPlaceholder: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  modalLoading: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  modalLoadingText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    marginTop: 10,
+  },
+  modalEmpty: {
+    padding: 40,
+    alignItems: 'center',
+    gap: 15,
+  },
+  modalEmptyText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+  },
+  busesLista: {
+    padding: 15,
+    gap: 10,
+  },
+  busItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    gap: 12,
+  },
+  busItemSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.backgroundLight,
+  },
+  busItemIcon: {
+    width: 50,
+    height: 50,
+    backgroundColor: COLORS.backgroundLight,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  busItemInfo: {
+    flex: 1,
+  },
+  busItemPlaca: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 3,
+  },
+  busItemMarca: {
+    fontSize: 13,
+    color: COLORS.textLight,
+    marginBottom: 2,
+  },
+  busItemKm: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
 });
