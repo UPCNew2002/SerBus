@@ -32,25 +32,25 @@ VALUES
 -- 2. BUSES DE TRANSPORTES ABC (empresa_id = 1)
 -- ───────────────────────────────────────────────────────
 
-INSERT INTO buses (placa, marca, modelo, anio, kilometraje_actual, empresa_id)
+INSERT INTO buses (placa, vin, marca, modelo, anio, kilometraje_actual, empresa_id)
 VALUES
   -- Buses URGENTES (menos de 500 km para mantenimiento)
-  ('ABC-101', 'Mercedes-Benz', 'OF-1721', 2018, 49700, 1),  -- Faltan 300 km
-  ('ABC-102', 'Volvo', 'B7R', 2019, 59800, 1),              -- Faltan 200 km
+  ('ABC-101', 'WDB9301161L123456', 'Mercedes-Benz', 'OF-1721', 2018, 49700, 1),  -- Faltan 300 km
+  ('ABC-102', 'YV3R8CB20KA234567', 'Volvo', 'B7R', 2019, 59800, 1),              -- Faltan 200 km
 
   -- Buses PRÓXIMOS (500-1000 km para mantenimiento)
-  ('ABC-103', 'Scania', 'K380', 2020, 49200, 1),            -- Faltan 800 km
-  ('ABC-104', 'Mercedes-Benz', 'LO-916', 2017, 39500, 1),   -- Faltan 500 km
+  ('ABC-103', '9BSK4X2A0LR345678', 'Scania', 'K380', 2020, 49200, 1),            -- Faltan 800 km
+  ('ABC-104', 'WDB9301161L456789', 'Mercedes-Benz', 'LO-916', 2017, 39500, 1),   -- Faltan 500 km
 
   -- Buses NORMALES (más de 1000 km)
-  ('ABC-105', 'Volvo', 'B9R', 2021, 25000, 1),              -- Faltan 5000 km
-  ('ABC-106', 'Scania', 'K124', 2016, 42000, 1),            -- Faltan 8000 km
-  ('ABC-107', 'Mercedes-Benz', 'OF-1724', 2019, 15000, 1),  -- Faltan 5000 km
-  ('ABC-108', 'Volvo', 'B12R', 2022, 8000, 1),              -- Faltan 2000 km
+  ('ABC-105', 'YV3R8CB20MA567890', 'Volvo', 'B9R', 2021, 25000, 1),              -- Faltan 5000 km
+  ('ABC-106', '9BSK4X2A0GR678901', 'Scania', 'K124', 2016, 42000, 1),            -- Faltan 8000 km
+  ('ABC-107', 'WDB9301161L789012', 'Mercedes-Benz', 'OF-1724', 2019, 15000, 1),  -- Faltan 5000 km
+  ('ABC-108', 'YV3R8CB20NA890123', 'Volvo', 'B12R', 2022, 8000, 1),              -- Faltan 2000 km
 
   -- Buses recién mantenidos
-  ('ABC-109', 'Scania', 'K410', 2023, 1500, 1),             -- Faltan 8500 km
-  ('ABC-110', 'Mercedes-Benz', 'OF-1726', 2023, 500, 1);    -- Faltan 9500 km
+  ('ABC-109', '9BSK4X2A0NR901234', 'Scania', 'K410', 2023, 1500, 1),             -- Faltan 8500 km
+  ('ABC-110', 'WDB9301161L012345', 'Mercedes-Benz', 'OF-1726', 2023, 500, 1);    -- Faltan 9500 km
 
 -- ───────────────────────────────────────────────────────
 -- 3. OTs DE EJEMPLO
