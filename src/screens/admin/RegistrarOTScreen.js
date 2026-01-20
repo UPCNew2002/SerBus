@@ -10,6 +10,8 @@ import {
   ScrollView,
   Alert,
   Image,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,12 +20,13 @@ import { COLORS } from '../../constants/colors';
 import useOTsStore from '../../store/otsStore';
 import useTrabajosStore from '../../store/trabajosStore';
 import useAuthStore from '../../store/authStore';
-import { generarNumeroOT } from '../../lib/cronograma';
+import { generarNumeroOT, obtenerBusesEmpresa } from '../../lib/cronograma';
 
 export default function RegistrarOTScreen({ navigation }) {
   // Estados del formulario
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [numeroOT, setNumeroOT] = useState('');
+  const [busSeleccionado, setBusSeleccionado] = useState(null);
   const [placa, setPlaca] = useState('');
   const [vin, setVin] = useState('');
   const [kilometraje, setKilometraje] = useState('');
@@ -39,6 +42,11 @@ const [productoPrecio, setProductoPrecio] = useState('');
   const [loading, setLoading] = useState(false);
   const [generandoNumeroOT, setGenerandoNumeroOT] = useState(false);
 
+  // Estados para selector de buses
+  const [buses, setBuses] = useState([]);
+  const [showBusSelector, setShowBusSelector] = useState(false);
+  const [loadingBuses, setLoadingBuses] = useState(false);
+
   const { agregarOT, existeNumeroOT } = useOTsStore();
   const { trabajos } = useTrabajosStore();
   const { empresa } = useAuthStore();
@@ -47,8 +55,32 @@ const [productoPrecio, setProductoPrecio] = useState('');
   useEffect(() => {
     if (empresa?.id) {
       generarNumeroOTAutomatico();
+      cargarBuses();
     }
   }, [empresa]);
+
+  // Cargar lista de buses
+  async function cargarBuses() {
+    setLoadingBuses(true);
+    try {
+      const busesData = await obtenerBusesEmpresa(empresa.id);
+      setBuses(busesData || []);
+    } catch (error) {
+      console.error('Error cargando buses:', error);
+      Alert.alert('Error', 'No se pudieron cargar los buses');
+    } finally {
+      setLoadingBuses(false);
+    }
+  }
+
+  // Seleccionar un bus
+  function seleccionarBus(bus) {
+    setBusSeleccionado(bus);
+    setPlaca(bus.placa);
+    setVin(bus.vin);
+    setKilometraje(bus.kilometraje_actual.toString());
+    setShowBusSelector(false);
+  }
 
   async function generarNumeroOTAutomatico() {
     setGenerandoNumeroOT(true);
@@ -319,6 +351,34 @@ Alert.alert(
         {/* SECCIÓN: VEHÍCULO */}
         <Text style={styles.sectionTitle}>INFORMACIÓN DEL VEHÍCULO</Text>
 
+        {/* Selector de Bus */}
+        <TouchableOpacity
+          style={styles.busSelector}
+          onPress={() => setShowBusSelector(true)}
+        >
+          <View style={styles.busSelectorIcon}>
+            <Ionicons name="bus" size={24} color={COLORS.primary} />
+          </View>
+          <View style={styles.busSelectorContent}>
+            {busSeleccionado ? (
+              <>
+                <Text style={styles.busSelectorLabel}>Bus Seleccionado</Text>
+                <Text style={styles.busSelectorValue}>
+                  {busSeleccionado.placa} - {busSeleccionado.marca} {busSeleccionado.modelo}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.busSelectorLabel}>Seleccionar Bus</Text>
+                <Text style={styles.busSelectorPlaceholder}>
+                  Toca aquí para elegir un bus de la flota
+                </Text>
+              </>
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={24} color={COLORS.textMuted} />
+        </TouchableOpacity>
+
         {/* Placa */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>PLACA *</Text>
@@ -334,8 +394,12 @@ Alert.alert(
               onChangeText={(text) => setPlaca(text.toUpperCase())}
               autoCapitalize="characters"
               maxLength={10}
+              editable={!busSeleccionado}
             />
           </View>
+          {busSeleccionado && (
+            <Text style={styles.helperText}>Auto-completado desde bus seleccionado</Text>
+          )}
         </View>
 
         {/* VIN */}
@@ -353,16 +417,17 @@ Alert.alert(
               onChangeText={(text) => setVin(text.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
               autoCapitalize="characters"
               maxLength={17}
+              editable={!busSeleccionado}
             />
           </View>
           <Text style={styles.helperText}>
-            {vin.length}/17 caracteres
+            {busSeleccionado ? 'Auto-completado desde bus seleccionado' : `${vin.length}/17 caracteres`}
           </Text>
         </View>
 
         {/* Kilometraje */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>KILOMETRAJE (Opcional)</Text>
+          <Text style={styles.label}>KILOMETRAJE {busSeleccionado ? '(Puedes actualizarlo)' : '(Opcional)'}</Text>
           <View style={styles.inputContainer}>
             <View style={styles.inputIconBox}>
               <Ionicons name="speedometer" size={20} color={COLORS.text} />
@@ -376,12 +441,18 @@ Alert.alert(
               keyboardType="numeric"
             />
           </View>
-          <View style={styles.warningBox}>
-            <Ionicons name="warning" size={16} color={COLORS.statusWarning} />
-            <Text style={styles.warningText}>
-              Sin kilometraje, no se actualizará el cronograma
+          {busSeleccionado ? (
+            <Text style={styles.helperText}>
+              Kilometraje actual: {busSeleccionado.kilometraje_actual} km - Puedes actualizarlo
             </Text>
-          </View>
+          ) : (
+            <View style={styles.warningBox}>
+              <Ionicons name="warning" size={16} color={COLORS.statusWarning} />
+              <Text style={styles.warningText}>
+                Sin kilometraje, no se actualizará el cronograma
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* SECCIÓN: TRABAJOS REALIZADOS */}
@@ -641,6 +712,73 @@ Alert.alert(
 
         <View style={{ height: 30 }} />
       </ScrollView>
+
+      {/* Modal Selector de Buses */}
+      <Modal
+        visible={showBusSelector}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowBusSelector(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Header del Modal */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Bus</Text>
+              <TouchableOpacity onPress={() => setShowBusSelector(false)}>
+                <Ionicons name="close" size={28} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Lista de Buses */}
+            {loadingBuses ? (
+              <View style={styles.modalLoading}>
+                <Text style={styles.modalLoadingText}>Cargando buses...</Text>
+              </View>
+            ) : buses.length === 0 ? (
+              <View style={styles.modalEmpty}>
+                <Ionicons name="bus-outline" size={48} color={COLORS.textMuted} />
+                <Text style={styles.modalEmptyText}>No hay buses disponibles</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={buses}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.busesLista}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.busItem,
+                      busSeleccionado?.id === item.id && styles.busItemSelected,
+                    ]}
+                    onPress={() => seleccionarBus(item)}
+                  >
+                    <View style={styles.busItemIcon}>
+                      <Ionicons
+                        name="bus"
+                        size={28}
+                        color={busSeleccionado?.id === item.id ? COLORS.primary : COLORS.textMuted}
+                      />
+                    </View>
+                    <View style={styles.busItemInfo}>
+                      <Text style={styles.busItemPlaca}>{item.placa}</Text>
+                      <Text style={styles.busItemMarca}>
+                        {item.marca} {item.modelo} ({item.anio})
+                      </Text>
+                      <Text style={styles.busItemKm}>
+                        {item.kilometraje_actual.toLocaleString()} km
+                      </Text>
+                    </View>
+                    {busSeleccionado?.id === item.id && (
+                      <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -898,5 +1036,130 @@ totalGeneralValue: {
   fontWeight: 'bold',
   color: COLORS.text,
   letterSpacing: 1,
+},
+busSelector: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: COLORS.card,
+  padding: 15,
+  borderRadius: 12,
+  borderWidth: 2,
+  borderColor: COLORS.border,
+  marginBottom: 20,
+  gap: 12,
+},
+busSelectorIcon: {
+  width: 50,
+  height: 50,
+  backgroundColor: COLORS.backgroundLight,
+  borderRadius: 10,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+busSelectorContent: {
+  flex: 1,
+},
+busSelectorLabel: {
+  fontSize: 11,
+  fontWeight: 'bold',
+  color: COLORS.textLight,
+  marginBottom: 3,
+  letterSpacing: 1.2,
+},
+busSelectorValue: {
+  fontSize: 15,
+  fontWeight: '600',
+  color: COLORS.text,
+},
+busSelectorPlaceholder: {
+  fontSize: 13,
+  color: COLORS.textMuted,
+},
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  justifyContent: 'flex-end',
+},
+modalContent: {
+  backgroundColor: COLORS.background,
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  maxHeight: '80%',
+  paddingBottom: 20,
+},
+modalHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: 20,
+  borderBottomWidth: 2,
+  borderBottomColor: COLORS.border,
+},
+modalTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: COLORS.text,
+},
+modalLoading: {
+  padding: 40,
+  alignItems: 'center',
+},
+modalLoadingText: {
+  fontSize: 14,
+  color: COLORS.textMuted,
+  marginTop: 10,
+},
+modalEmpty: {
+  padding: 40,
+  alignItems: 'center',
+  gap: 15,
+},
+modalEmptyText: {
+  fontSize: 14,
+  color: COLORS.textMuted,
+},
+busesLista: {
+  padding: 15,
+  gap: 10,
+},
+busItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: COLORS.card,
+  padding: 15,
+  borderRadius: 12,
+  borderWidth: 2,
+  borderColor: COLORS.border,
+  gap: 12,
+},
+busItemSelected: {
+  borderColor: COLORS.primary,
+  backgroundColor: COLORS.backgroundLight,
+},
+busItemIcon: {
+  width: 50,
+  height: 50,
+  backgroundColor: COLORS.backgroundLight,
+  borderRadius: 10,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+busItemInfo: {
+  flex: 1,
+},
+busItemPlaca: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: COLORS.text,
+  marginBottom: 3,
+},
+busItemMarca: {
+  fontSize: 13,
+  color: COLORS.textLight,
+  marginBottom: 2,
+},
+busItemKm: {
+  fontSize: 12,
+  color: COLORS.textMuted,
 },
 });

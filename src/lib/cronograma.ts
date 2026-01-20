@@ -237,6 +237,55 @@ export async function obtenerHistorialMantenimiento(
 }
  
 // ───────────────────────────────────────────────────────
+// FUNCIONES AUXILIARES
+// ───────────────────────────────────────────────────────
+
+export interface Bus {
+  id: number;
+  empresa_id: number;
+  placa: string;
+  vin: string;
+  marca: string;
+  modelo: string;
+  anio: number;
+  kilometraje_actual: number;
+  activo: boolean;
+}
+
+/**
+ * Obtener lista de buses de una empresa
+ *
+ * @param empresaId - ID de la empresa
+ * @returns Lista de buses activos
+ *
+ * @example
+ * const buses = await obtenerBusesEmpresa(1);
+ * console.log(`${buses.length} buses encontrados`);
+ */
+export async function obtenerBusesEmpresa(
+  empresaId: number
+): Promise<Bus[]> {
+  try {
+    const { data, error } = await supabase
+      .from('buses')
+      .select('*')
+      .eq('empresa_id', empresaId)
+      .eq('activo', true)
+      .order('placa', { ascending: true });
+
+    if (error) {
+      console.error('Error obteniendo buses:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error obteniendo buses:', error);
+    return [];
+  }
+}
+
+// ───────────────────────────────────────────────────────
 // FUNCIONES CRUD BÁSICAS
 // ───────────────────────────────────────────────────────
  
