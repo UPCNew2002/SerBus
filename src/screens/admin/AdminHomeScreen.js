@@ -1,15 +1,43 @@
 // src/screens/admin/AdminHomeScreen.js
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColores } from '../../hooks/useColores';
 import useAuthStore from '../../store/authStore';
+import { obtenerEstadisticasOTs, busesNecesitanMantenimiento } from '../../lib/cronograma';
 
 export default function AdminHomeScreen({ navigation }) {
   const { user, empresa, logout } = useAuthStore();
   const COLORS = useColores();
+
+  const [estadisticas, setEstadisticas] = useState(null);
+  const [busesUrgentes, setBusesUrgentes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (empresa?.id) {
+      cargarDatos();
+    }
+  }, [empresa]);
+
+  async function cargarDatos() {
+    setLoading(true);
+    try {
+      // Obtener estadísticas de OTs
+      const stats = await obtenerEstadisticasOTs(empresa.id);
+      setEstadisticas(stats);
+
+      // Obtener buses que necesitan mantenimiento urgente
+      const buses = await busesNecesitanMantenimiento(empresa.id);
+      setBusesUrgentes(buses.filter(b => b.urgencia === 'URGENTE'));
+    } catch (error) {
+      console.error('Error cargando datos:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
@@ -33,20 +61,65 @@ export default function AdminHomeScreen({ navigation }) {
           Hola, {user?.nombre || 'Admin'}
         </Text>
 
-        <View style={styles.statsRow}>
-          <View style={[styles.statBox, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}>
-            <Text style={[styles.statNumber, { color: COLORS.text }]}>12</Text>
-            <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>Buses</Text>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={[styles.loadingText, { color: COLORS.textMuted }]}>Cargando estadísticas...</Text>
           </View>
-          <View style={[styles.statBox, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}>
-            <Text style={[styles.statNumber, { color: COLORS.statusDanger }]}>3</Text>
-            <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>Vencidos</Text>
-          </View>
-          <View style={[styles.statBox, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}>
-            <Text style={[styles.statNumber, { color: COLORS.statusWarning }]}>5</Text>
-            <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>Próximos</Text>
-          </View>
-        </View>
+        ) : (
+          <>
+            <View style={styles.statsRow}>
+              <View style={[styles.statBox, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}>
+                <Text style={[styles.statNumber, { color: COLORS.primary }]}>
+                  {estadisticas?.total_ots || 0}
+                </Text>
+                <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>OTs Total</Text>
+              </View>
+              <View style={[styles.statBox, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}>
+                <Text style={[styles.statNumber, { color: COLORS.statusWarning }]}>
+                  {estadisticas?.ots_en_proceso || 0}
+                </Text>
+                <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>En Proceso</Text>
+              </View>
+              <View style={[styles.statBox, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}>
+                <Text style={[styles.statNumber, { color: COLORS.statusDanger }]}>
+                  {busesUrgentes.length}
+                </Text>
+                <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>Urgentes</Text>
+              </View>
+            </View>
+
+            {/* Alertas de mantenimiento urgente */}
+            {busesUrgentes.length > 0 && (
+              <View style={[styles.alertBox, { backgroundColor: COLORS.card, borderColor: COLORS.statusDanger }]}>
+                <View style={styles.alertHeader}>
+                  <Ionicons name="warning" size={20} color={COLORS.statusDanger} />
+                  <Text style={[styles.alertTitle, { color: COLORS.statusDanger }]}>
+                    MANTENIMIENTO URGENTE
+                  </Text>
+                </View>
+                {busesUrgentes.slice(0, 3).map((bus, index) => (
+                  <View key={index} style={styles.alertBusRow}>
+                    <Text style={[styles.alertBusPlaca, { color: COLORS.text }]}>{bus.placa}</Text>
+                    <Text style={[styles.alertBusKm, { color: COLORS.textMuted }]}>
+                      {bus.km_restantes} km restantes
+                    </Text>
+                  </View>
+                ))}
+                {busesUrgentes.length > 3 && (
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('Cronograma')}
+                    style={styles.alertVerMasButton}
+                  >
+                    <Text style={[styles.alertVerMasText, { color: COLORS.statusDanger }]}>
+                      Ver {busesUrgentes.length - 3} más →
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </>
+        )}
 
         <Text style={[styles.sectionTitle, { color: COLORS.textMuted }]}>ACCESOS RÁPIDOS</Text>
 
@@ -256,5 +329,54 @@ const styles = StyleSheet.create({
   logoutText: {
     fontWeight: '600',
     fontSize: 15,
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    gap: 15,
+  },
+  loadingText: {
+    fontSize: 14,
+  },
+  alertBox: {
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 25,
+    borderWidth: 2,
+    borderLeftWidth: 4,
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  alertTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  alertBusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ffffff20',
+  },
+  alertBusPlaca: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  alertBusKm: {
+    fontSize: 12,
+  },
+  alertVerMasButton: {
+    paddingTop: 10,
+    alignItems: 'center',
+  },
+  alertVerMasText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

@@ -1,6 +1,6 @@
 // src/screens/admin/DetalleOTScreen.js
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,24 +8,83 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import useOTsStore from '../../store/otsStore';
+import { obtenerDetalleOT } from '../../lib/cronograma';
 
 export default function DetalleOTScreen({ route, navigation }) {
   const { otId } = route.params;
   const { obtenerOT } = useOTsStore();
-  const ot = obtenerOT(otId);
 
-  if (!ot) {
+  const [detalle, setDetalle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  // Intentar cargar desde el store local primero
+  const otLocal = obtenerOT(otId);
+
+  useEffect(() => {
+    cargarDetalle();
+  }, [otId]);
+
+  async function cargarDetalle() {
+    setLoading(true);
+    setError(false);
+    try {
+      // Intentar obtener detalle desde Supabase
+      const detalleSupabase = await obtenerDetalleOT(otId);
+      if (detalleSupabase) {
+        setDetalle(detalleSupabase);
+      } else {
+        // Si no hay en Supabase, usar datos locales
+        if (otLocal) {
+          setDetalle({ ot: otLocal });
+        } else {
+          setError(true);
+        }
+      }
+    } catch (err) {
+      console.error('Error cargando detalle de OT:', err);
+      // Fallback a datos locales si Supabase falla
+      if (otLocal) {
+        setDetalle({ ot: otLocal });
+      } else {
+        setError(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>OT no encontrada</Text>
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Cargando detalle de OT...</Text>
       </View>
     );
   }
+
+  if (error || !detalle) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Ionicons name="alert-circle" size={60} color={COLORS.statusDanger} />
+        <Text style={styles.errorText}>OT no encontrada</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.retryButtonText}>Volver</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const ot = detalle.ot || detalle;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -322,9 +381,33 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: COLORS.backgroundLight,
   },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    color: COLORS.textMuted,
+    marginTop: 15,
+    fontSize: 14,
+  },
   errorText: {
     color: COLORS.statusDanger,
     textAlign: 'center',
-    marginTop: 50,
+    marginTop: 15,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  retryButton: {
+    marginTop: 20,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  retryButtonText: {
+    color: COLORS.text,
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

@@ -1,6 +1,6 @@
 // src/screens/admin/RegistrarOTScreen.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { COLORS } from '../../constants/colors';
 import useOTsStore from '../../store/otsStore';
 import useTrabajosStore from '../../store/trabajosStore';
 import useAuthStore from '../../store/authStore';
+import { generarNumeroOT } from '../../lib/cronograma';
 
 export default function RegistrarOTScreen({ navigation }) {
   // Estados del formulario
@@ -36,10 +37,33 @@ const [productoNombre, setProductoNombre] = useState('');
 const [productoCantidad, setProductoCantidad] = useState('');
 const [productoPrecio, setProductoPrecio] = useState('');
   const [loading, setLoading] = useState(false);
+  const [generandoNumeroOT, setGenerandoNumeroOT] = useState(false);
 
   const { agregarOT, existeNumeroOT } = useOTsStore();
   const { trabajos } = useTrabajosStore();
   const { empresa } = useAuthStore();
+
+  // Generar número de OT automáticamente al cargar
+  useEffect(() => {
+    if (empresa?.id) {
+      generarNumeroOTAutomatico();
+    }
+  }, [empresa]);
+
+  async function generarNumeroOTAutomatico() {
+    setGenerandoNumeroOT(true);
+    try {
+      const numero = await generarNumeroOT(empresa.id);
+      if (numero) {
+        setNumeroOT(numero);
+      }
+    } catch (error) {
+      console.error('Error generando número de OT:', error);
+      Alert.alert('Error', 'No se pudo generar el número de OT automáticamente');
+    } finally {
+      setGenerandoNumeroOT(false);
+    }
+  }
 
   // Toggle trabajo seleccionado
   const toggleTrabajo = (trabajo) => {
@@ -268,14 +292,28 @@ Alert.alert(
             </View>
             <TextInput
               style={styles.input}
-              placeholder="Ej: 1234567"
+              placeholder={generandoNumeroOT ? "Generando..." : "OT-2026-0001"}
               placeholderTextColor={COLORS.textMuted}
               value={numeroOT}
               onChangeText={(text) => setNumeroOT(text.toUpperCase())}
               autoCapitalize="characters"
+              editable={!generandoNumeroOT}
             />
+            <TouchableOpacity
+              style={styles.regenerateButton}
+              onPress={generarNumeroOTAutomatico}
+              disabled={generandoNumeroOT}
+            >
+              <Ionicons
+                name={generandoNumeroOT ? "hourglass" : "refresh"}
+                size={20}
+                color={COLORS.primary}
+              />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.helperText}>Debe ser único</Text>
+          <Text style={styles.helperText}>
+            {generandoNumeroOT ? "Generando número automático..." : "Generado automáticamente - Puedes editarlo"}
+          </Text>
         </View>
 
         {/* SECCIÓN: VEHÍCULO */}
@@ -650,6 +688,7 @@ const styles = StyleSheet.create({
   },
   inputIconBox: { width: 45, height: 50, backgroundColor: COLORS.metal, justifyContent: 'center', alignItems: 'center' },
   input: { flex: 1, height: 50, paddingHorizontal: 15, fontSize: 15, color: COLORS.text },
+  regenerateButton: { width: 45, height: 50, justifyContent: 'center', alignItems: 'center', borderLeftWidth: 1, borderLeftColor: COLORS.border },
   helperText: { fontSize: 11, color: COLORS.textMuted, marginTop: 5, marginLeft: 5 },
   warningBox: {
     flexDirection: 'row',
