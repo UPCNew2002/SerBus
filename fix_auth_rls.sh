@@ -13,9 +13,9 @@ PROJECT_ID="uzkznawepjnmmbenhvbb"
 export PGPASSWORD="%Contraseña25"
 
 # Construir host y user
-PGHOST="db.${PROJECT_ID}.supabase.co"
+PGHOST="aws-1-us-east-2.pooler.supabase.com"
 PGPORT="5432"
-PGUSER="postgres"
+PGUSER="postgres.${PROJECT_ID}"
 PGDATABASE="postgres"
 
 echo "═══════════════════════════════════════════════════════"
