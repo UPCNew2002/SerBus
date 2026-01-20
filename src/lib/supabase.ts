@@ -54,8 +54,15 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
  */
 export async function signIn(username: string, password: string) {
   try {
-    // Convertir username a email interno
-    const email = `${username}@serbus.internal`;
+    // Mapear username a email de Gmail
+    const emailMap: { [key: string]: string } = {
+      'jperez': 'jperez@gmail.com',
+      'mgarcia': 'mgarcia@gmail.com',
+      'superadmin': 'superadmin@gmail.com',
+    };
+
+    // Si es un email completo, usarlo directamente, sino usar el mapeo
+    const email = username.includes('@') ? username : (emailMap[username] || `${username}@gmail.com`);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
