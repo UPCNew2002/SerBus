@@ -60,10 +60,10 @@ export async function signIn(username: string, password: string) {
       'mgarcia': 'mgarcia@gmail.com',
       'superadmin': 'superadmin@gmail.com',
     };
-
+ 
     // Si es un email completo, usarlo directamente, sino usar el mapeo
     const email = username.includes('@') ? username : (emailMap[username] || `${username}@gmail.com`);
-
+ 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
