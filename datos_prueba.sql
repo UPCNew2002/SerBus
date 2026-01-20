@@ -5,23 +5,28 @@
 -- todas las funcionalidades de la aplicación
 -- ═══════════════════════════════════════════════════════
 
+-- Limpiar datos anteriores
+DELETE FROM ots_trabajos;
+DELETE FROM ots;
+DELETE FROM buses WHERE empresa_id = 1;
+DELETE FROM trabajos;
+
 -- ───────────────────────────────────────────────────────
 -- 1. TRABAJOS (CATÁLOGO)
 -- ───────────────────────────────────────────────────────
 
-INSERT INTO trabajos (nombre, descripcion, categoria, entra_cronograma)
+INSERT INTO trabajos (nombre, descripcion, categoria)
 VALUES
-  ('Cambio de aceite', 'Cambio de aceite de motor y filtro', 'Mantenimiento', true),
-  ('Cambio de filtros', 'Cambio de filtros de aire, aceite y combustible', 'Mantenimiento', true),
-  ('Revisión de frenos', 'Inspección y ajuste del sistema de frenos', 'Seguridad', true),
-  ('Alineación y balanceo', 'Alineación de dirección y balanceo de neumáticos', 'Mantenimiento', true),
-  ('Cambio de batería', 'Reemplazo de batería', 'Eléctrico', false),
-  ('Reparación de motor', 'Reparación general de motor', 'Reparación', false),
-  ('Cambio de neumáticos', 'Reemplazo de neumáticos gastados', 'Mantenimiento', false),
-  ('Revisión eléctrica', 'Diagnóstico del sistema eléctrico', 'Eléctrico', false),
-  ('Limpieza profunda', 'Limpieza interior y exterior completa', 'Limpieza', false),
-  ('Revisión de suspensión', 'Inspección de amortiguadores y suspensión', 'Seguridad', true)
-ON CONFLICT (nombre) DO NOTHING;
+  ('Cambio de aceite', 'Cambio de aceite de motor y filtro', 'Mantenimiento'),
+  ('Cambio de filtros', 'Cambio de filtros de aire, aceite y combustible', 'Mantenimiento'),
+  ('Revisión de frenos', 'Inspección y ajuste del sistema de frenos', 'Seguridad'),
+  ('Alineación y balanceo', 'Alineación de dirección y balanceo de neumáticos', 'Mantenimiento'),
+  ('Cambio de batería', 'Reemplazo de batería', 'Eléctrico'),
+  ('Reparación de motor', 'Reparación general de motor', 'Reparación'),
+  ('Cambio de neumáticos', 'Reemplazo de neumáticos gastados', 'Mantenimiento'),
+  ('Revisión eléctrica', 'Diagnóstico del sistema eléctrico', 'Eléctrico'),
+  ('Limpieza profunda', 'Limpieza interior y exterior completa', 'Limpieza'),
+  ('Revisión de suspensión', 'Inspección de amortiguadores y suspensión', 'Seguridad');
 
 -- ───────────────────────────────────────────────────────
 -- 2. BUSES DE TRANSPORTES ABC (empresa_id = 1)
@@ -45,8 +50,7 @@ VALUES
 
   -- Buses recién mantenidos
   ('ABC-109', 'Scania', 'K410', 2023, 1500, 1),             -- Faltan 8500 km
-  ('ABC-110', 'Mercedes-Benz', 'OF-1726', 2023, 500, 1)     -- Faltan 9500 km
-ON CONFLICT (placa) DO NOTHING;
+  ('ABC-110', 'Mercedes-Benz', 'OF-1726', 2023, 500, 1);    -- Faltan 9500 km
 
 -- ───────────────────────────────────────────────────────
 -- 3. OTs DE EJEMPLO
@@ -67,8 +71,7 @@ FROM buses b
 CROSS JOIN perfiles p
 WHERE b.placa = 'ABC-110'
   AND p.username = 'mgarcia'
-LIMIT 1
-ON CONFLICT (numero_ot) DO NOTHING;
+LIMIT 1;
 
 -- Agregar trabajos a la OT completada
 INSERT INTO ots_trabajos (ot_id, trabajo_id, estado, notas)
@@ -80,8 +83,7 @@ SELECT
 FROM ots o
 CROSS JOIN trabajos t
 WHERE o.numero_ot = 'OT-2026-0001'
-  AND t.nombre IN ('Cambio de aceite', 'Cambio de filtros', 'Revisión de frenos')
-ON CONFLICT DO NOTHING;
+  AND t.nombre IN ('Cambio de aceite', 'Cambio de filtros', 'Revisión de frenos');
 
 -- OT en proceso (para estadísticas)
 INSERT INTO ots (numero_ot, empresa_id, bus_id, trabajador_id, fecha_inicio, estado, observaciones)
@@ -97,21 +99,19 @@ FROM buses b
 CROSS JOIN perfiles p
 WHERE b.placa = 'ABC-109'
   AND p.username = 'mgarcia'
-LIMIT 1
-ON CONFLICT (numero_ot) DO NOTHING;
+LIMIT 1;
 
 -- Agregar trabajos a la OT en proceso
 INSERT INTO ots_trabajos (ot_id, trabajo_id, estado, notas)
 SELECT
   o.id,
   t.id,
-  'en_proceso',
+  'pendiente',
   'En ejecución'
 FROM ots o
 CROSS JOIN trabajos t
 WHERE o.numero_ot = 'OT-2026-0002'
-  AND t.nombre IN ('Alineación y balanceo', 'Revisión de suspensión')
-ON CONFLICT DO NOTHING;
+  AND t.nombre IN ('Alineación y balanceo', 'Revisión de suspensión');
 
 -- OT pendiente (para estadísticas)
 INSERT INTO ots (numero_ot, empresa_id, bus_id, trabajador_id, fecha_inicio, estado, observaciones)
@@ -127,8 +127,7 @@ FROM buses b
 CROSS JOIN perfiles p
 WHERE b.placa = 'ABC-101'
   AND p.username = 'jperez'
-LIMIT 1
-ON CONFLICT (numero_ot) DO NOTHING;
+LIMIT 1;
 
 -- Agregar trabajos a la OT pendiente
 INSERT INTO ots_trabajos (ot_id, trabajo_id, estado, notas)
@@ -140,8 +139,7 @@ SELECT
 FROM ots o
 CROSS JOIN trabajos t
 WHERE o.numero_ot = 'OT-2026-0003'
-  AND t.nombre IN ('Cambio de aceite', 'Cambio de filtros')
-ON CONFLICT DO NOTHING;
+  AND t.nombre IN ('Cambio de aceite', 'Cambio de filtros');
 
 -- ═══════════════════════════════════════════════════════
 -- VERIFICACIÓN
