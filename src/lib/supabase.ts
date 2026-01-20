@@ -14,11 +14,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // ───────────────────────────────────────────────────────
 // CONFIGURACIÓN
 // ───────────────────────────────────────────────────────
-// ⚠️ IMPORTANTE: Cambia estos valores por los tuyos
-// Los encuentras en SUPABASE_CREDENTIALS.txt
 
-const SUPABASE_URL = 'https://TU_PROJECT_ID.supabase.co';
-const SUPABASE_ANON_KEY = 'TU_ANON_KEY_AQUI';
+const SUPABASE_URL = 'https://uzkznawepjnmmbenhvbb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6a3puYXdlcGpubW1iZW5odmJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjUwNzMsImV4cCI6MjA4NDI0MTA3M30.vz20XqapuW6xQrdRryqEjw2qx5u0Wygqm4HRM_P2h0M';
 
 // ───────────────────────────────────────────────────────
 // CREAR CLIENTE
