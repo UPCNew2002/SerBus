@@ -118,7 +118,7 @@ export default function WorkerCronogramaScreen({ navigation }) {
             <View style={styles.kmValueRow}>
               <Ionicons name="construct" size={16} color={COLORS.primary} />
               <Text style={styles.kmValue}>
-                {item.proximo_kilometraje?.toLocaleString()} km
+                {item.km_proximo_mantenimiento?.toLocaleString()} km
               </Text>
             </View>
           </View>
