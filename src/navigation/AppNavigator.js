@@ -26,6 +26,7 @@ import RegistrarOTScreen from '../screens/admin/RegistrarOTScreen';
 import OTsListScreen from '../screens/admin/OTsListScreen';
 import DetalleOTScreen from '../screens/admin/DetalleOTScreen';
 import CronogramaScreen from '../screens/admin/CronogramaScreen';
+import ListaBusesScreen from '../screens/admin/ListaBusesScreen';
 import UsuariosListScreen from '../screens/admin/UsuariosListScreen';
 import CrearUsuarioScreen from '../screens/admin/CrearUsuarioScreen';
 import EditarUsuarioScreen from '../screens/admin/EditarUsuarioScreen';
@@ -77,6 +78,7 @@ if (user?.rol === 'admin') {
         <Stack.Screen name="RegistrarOT" component={RegistrarOTScreen} />
         <Stack.Screen name="OTsList" component={OTsListScreen} />
         <Stack.Screen name="DetalleOT" component={DetalleOTScreen} />
+        <Stack.Screen name="ListaBuses" component={ListaBusesScreen} />
         <Stack.Screen name="TrabajosList" component={TrabajosListScreen} />
         <Stack.Screen name="CrearTrabajo" component={CrearTrabajoScreen} />
         <Stack.Screen name="EditarTrabajo" component={EditarTrabajoScreen} />

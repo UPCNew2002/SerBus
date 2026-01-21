@@ -139,7 +139,7 @@ export default function AdminHomeScreen({ navigation }) {
         </TouchableOpacity>
 
         {/* Cronograma */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.menuCard, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}
           onPress={() => navigation.navigate('Cronograma')}
         >
@@ -149,6 +149,21 @@ export default function AdminHomeScreen({ navigation }) {
           <View style={styles.menuTextBox}>
             <Text style={[styles.menuTitle, { color: COLORS.text }]}>Cronograma</Text>
             <Text style={[styles.menuSubtitle, { color: COLORS.textMuted }]}>Mantenimientos preventivos</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+        </TouchableOpacity>
+
+        {/* Flota de Buses */}
+        <TouchableOpacity
+          style={[styles.menuCard, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}
+          onPress={() => navigation.navigate('ListaBuses')}
+        >
+          <View style={[styles.menuIconBox, { backgroundColor: COLORS.backgroundLight }]}>
+            <Ionicons name="bus" size={24} color={COLORS.primary} />
+          </View>
+          <View style={styles.menuTextBox}>
+            <Text style={[styles.menuTitle, { color: COLORS.text }]}>Flota de Buses</Text>
+            <Text style={[styles.menuSubtitle, { color: COLORS.textMuted }]}>Ver todos los buses</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
         </TouchableOpacity>
