@@ -85,10 +85,6 @@ ON ots_trabajos(ot_id, trabajo_id);
 CREATE INDEX IF NOT EXISTS idx_perfiles_username
 ON perfiles(username);
 
--- Búsqueda por email (login)
-CREATE INDEX IF NOT EXISTS idx_perfiles_email
-ON perfiles(email);
-
 -- Filtro por empresa
 CREATE INDEX IF NOT EXISTS idx_perfiles_empresa_id
 ON perfiles(empresa_id);

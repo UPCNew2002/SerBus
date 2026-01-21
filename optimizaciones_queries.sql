@@ -45,6 +45,10 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 -- 2. OPTIMIZACIÓN: buses_necesitan_mantenimiento
 -- ───────────────────────────────────────────────────────
 -- Mejora: Calcular urgencia en SQL en lugar de repetir lógica
+
+-- Eliminar función anterior si existe
+DROP FUNCTION IF EXISTS buses_necesitan_mantenimiento(INTEGER);
+
 CREATE OR REPLACE FUNCTION buses_necesitan_mantenimiento(p_empresa_id INTEGER)
 RETURNS TABLE(
   id INTEGER,
