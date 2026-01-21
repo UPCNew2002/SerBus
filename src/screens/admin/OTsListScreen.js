@@ -63,9 +63,11 @@ export default function OTsListScreen({ navigation }) {
 
       if (ot.observaciones) {
         try {
+          // Intentar parsear como JSON (OTs nuevas)
           datosAdicionales = JSON.parse(ot.observaciones);
         } catch (error) {
-          console.error('Error parseando observaciones:', error);
+          // Si falla, es texto simple (OTs de prueba antiguas)
+          // No hacer nada, usar valores por defecto
         }
       }
 
