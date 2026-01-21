@@ -6,17 +6,17 @@
 DROP FUNCTION IF EXISTS buses_necesitan_mantenimiento(INTEGER);
 DROP FUNCTION IF EXISTS buses_necesitan_mantenimiento;
 
--- Crear función con estructura correcta
+-- Crear función con estructura correcta que coincida con TypeScript
 CREATE OR REPLACE FUNCTION buses_necesitan_mantenimiento(p_empresa_id INTEGER)
 RETURNS TABLE(
-  id INTEGER,
+  bus_id INTEGER,
   placa VARCHAR,
   vin VARCHAR,
   marca VARCHAR,
   modelo VARCHAR,
   anio INTEGER,
   kilometraje_actual INTEGER,
-  proximo_kilometraje INTEGER,
+  km_proximo_mantenimiento INTEGER,
   km_restantes INTEGER,
   urgencia VARCHAR,
   proximo_trabajo VARCHAR
@@ -28,14 +28,14 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT
-    b.id,
+    b.id AS bus_id,
     b.placa,
     b.vin,
     b.marca,
     b.modelo,
     b.anio,
     b.kilometraje_actual,
-    ((b.kilometraje_actual / 10000 + 1) * 10000)::INTEGER AS proximo_kilometraje,
+    ((b.kilometraje_actual / 10000 + 1) * 10000)::INTEGER AS km_proximo_mantenimiento,
     (((b.kilometraje_actual / 10000 + 1) * 10000) - b.kilometraje_actual)::INTEGER AS km_restantes,
     CASE
       WHEN (((b.kilometraje_actual / 10000 + 1) * 10000) - b.kilometraje_actual) <= 500 THEN 'URGENTE'
