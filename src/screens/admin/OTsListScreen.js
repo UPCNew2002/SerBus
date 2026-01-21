@@ -62,6 +62,9 @@ export default function OTsListScreen({ navigation }) {
       modelo: ot.buses?.modelo || '',
       kilometraje: ot.kilometraje || 0,
       trabajos: [],
+      precioProductos: 0,
+      precioServicios: 0,
+      evidencia: null,
       precioTotal: 0,
       fromSupabase: true,
     })),
@@ -189,7 +192,13 @@ export default function OTsListScreen({ navigation }) {
 
       {/* Footer con foto */}
       <View style={styles.otFooter}>
-        <Image source={{ uri: item.evidencia }} style={styles.otThumbnail} />
+        {item.evidencia ? (
+          <Image source={{ uri: item.evidencia }} style={styles.otThumbnail} />
+        ) : (
+          <View style={[styles.otThumbnail, { justifyContent: 'center', alignItems: 'center' }]}>
+            <Ionicons name="image-outline" size={24} color={COLORS.textMuted} />
+          </View>
+        )}
         <View style={styles.otFooterInfo}>
           <View style={styles.otPreciosRow}>
             <Text style={styles.otPrecioDetalle}>
