@@ -302,7 +302,7 @@ export async function obtenerOTsEmpresa(empresaId: number): Promise<any[]> {
       .select(`
         *,
         buses:bus_id (placa, vin, marca, modelo, anio),
-        perfiles:trabajador_id (nombre, apellido)
+        perfiles:trabajador_id (nombre)
       `)
       .eq('empresa_id', empresaId)
       .order('fecha_inicio', { ascending: false });

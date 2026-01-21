@@ -57,7 +57,7 @@ export default function OTsListScreen({ navigation }) {
       placa: ot.buses?.placa || 'N/A',
       vin: ot.buses?.vin || 'N/A',
       estado: ot.estado,
-      trabajador: ot.perfiles ? `${ot.perfiles.nombre} ${ot.perfiles.apellido}` : 'N/A',
+      trabajador: ot.perfiles?.nombre || 'N/A',
       marca: ot.buses?.marca || '',
       modelo: ot.buses?.modelo || '',
       kilometraje: ot.kilometraje || 0,
