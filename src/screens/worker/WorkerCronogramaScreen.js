@@ -174,7 +174,9 @@ export default function WorkerCronogramaScreen({ navigation }) {
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>CRONOGRAMA</Text>
-        <View style={{ width: 40 }} />
+        <View style={styles.readOnlyBadge}>
+          <Ionicons name="eye" size={16} color={COLORS.text} />
+        </View>
       </View>
 
       {/* Estadísticas */}
@@ -327,6 +329,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
     letterSpacing: 1.5,
+  },
+  readOnlyBadge: {
+    width: 40,
+    height: 40,
+    backgroundColor: COLORS.backgroundLight,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statsContainer: {
     flexDirection: 'row',
