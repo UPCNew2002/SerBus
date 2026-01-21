@@ -29,6 +29,14 @@
 - ✅ Pantalla Lista de Buses con búsqueda
 - ✅ Indicadores de urgencia (URGENTE/PRÓXIMO/NORMAL)
 
+### Fase 9: Integración completa
+- ✅ Pantalla OTs carga desde Supabase (3 OTs visibles)
+- ✅ Registrar OT guarda en Supabase usando `crearOT()`
+- ✅ Actualización de kilometraje al registrar OT
+- ✅ Trabajos cargados desde Supabase (10 trabajos)
+- ✅ Datos adicionales (productos, precios, evidencia) en JSON
+- ✅ Validaciones y manejo de errores
+
 ## 📂 ARCHIVOS CREADOS/MODIFICADOS
 
 ### SQL
@@ -37,9 +45,10 @@
 
 ### TypeScript/JavaScript
 - `src/lib/supabase.ts` - Cliente Supabase con mapeo Gmail
-- `src/lib/cronograma.ts` - Wrappers de funciones + `obtenerBusesEmpresa()`
+- `src/lib/cronograma.ts` - Funciones: `crearOT()`, `actualizarKilometraje()`, `obtenerBusesEmpresa()`, `obtenerOTsEmpresa()`, `obtenerTrabajos()`
 - `src/screens/admin/AdminHomeScreen.js` - Dashboard con estadísticas
-- `src/screens/admin/RegistrarOTScreen.js` - Selector de buses
+- `src/screens/admin/RegistrarOTScreen.js` - Registrar OT con guardado a Supabase
+- `src/screens/admin/OTsListScreen.js` - Lista de OTs desde Supabase
 - `src/screens/admin/ListaBusesScreen.js` - Lista completa de buses
 - `src/navigation/AppNavigator.js` - Ruta ListaBuses agregada
 
@@ -112,12 +121,32 @@ Ver `src/lib/supabase.ts` para URL y anon key
 4. ✅ CHECK constraints en ots_trabajos
 5. ✅ VIN obligatorio en buses
 6. ✅ Selector de buses en Registrar OT
+7. ✅ Trabajos hardcodeados → Cargados desde Supabase
+8. ✅ Rendering errors en OTsListScreen (campos faltantes)
+9. ✅ Columna `apellido` inexistente en perfiles
 
-## 📝 PENDIENTES FASE 9-10
+## 🔄 FLUJO DE DATOS
 
-- [ ] Verificar pantalla OTs muestre las 3 OTs de prueba
-- [ ] Integrar guardado real en Supabase desde Registrar OT
-- [ ] Actualizar kilometraje de bus al completar OT
+### Registrar OT
+1. Usuario selecciona bus → Auto-completa placa, VIN, km
+2. Selecciona trabajos desde Supabase (10 disponibles)
+3. Completa descripción, productos, precios, evidencia
+4. Click "REGISTRAR OT":
+   - Llama `crearOT()` → Inserta en tabla `ots`
+   - Inserta trabajos en `ots_trabajos`
+   - Llama `actualizarKilometraje()` si cambió
+   - Datos extra (productos, precios, evidencia) en `observaciones` como JSON
+
+### Ver OTs
+1. Pantalla carga con `obtenerOTsEmpresa()`
+2. Query con JOIN a `buses` y `perfiles`
+3. Muestra 3 OTs de prueba + OTs nuevas
+4. Datos extra parseados desde `observaciones`
+
+## 📝 PENDIENTES FASE 10
+
 - [ ] Optimizar queries para producción
 - [ ] Índices en tablas para performance
 - [ ] Logs de errores en Sentry/similar
+- [ ] Migrar productos a tabla separada (opcional)
+- [ ] Upload real de imágenes a Supabase Storage
