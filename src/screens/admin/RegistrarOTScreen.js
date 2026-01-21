@@ -18,9 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../../constants/colors';
 import useOTsStore from '../../store/otsStore';
-import useTrabajosStore from '../../store/trabajosStore';
 import useAuthStore from '../../store/authStore';
-import { generarNumeroOT, obtenerBusesEmpresa, crearOT, actualizarKilometraje } from '../../lib/cronograma';
+import { generarNumeroOT, obtenerBusesEmpresa, crearOT, actualizarKilometraje, obtenerTrabajos } from '../../lib/cronograma';
 
 export default function RegistrarOTScreen({ navigation }) {
   // Estados del formulario
@@ -47,8 +46,11 @@ export default function RegistrarOTScreen({ navigation }) {
   const [showBusSelector, setShowBusSelector] = useState(false);
   const [loadingBuses, setLoadingBuses] = useState(false);
 
+  // Estados para trabajos
+  const [trabajos, setTrabajos] = useState([]);
+  const [loadingTrabajos, setLoadingTrabajos] = useState(false);
+
   const { agregarOT, existeNumeroOT } = useOTsStore();
-  const { trabajos } = useTrabajosStore();
   const { empresa, user } = useAuthStore();
 
   // Generar número de OT automáticamente al cargar
@@ -56,6 +58,7 @@ export default function RegistrarOTScreen({ navigation }) {
     if (empresa?.id) {
       generarNumeroOTAutomatico();
       cargarBuses();
+      cargarTrabajos();
     }
   }, [empresa]);
 
@@ -70,6 +73,20 @@ export default function RegistrarOTScreen({ navigation }) {
       Alert.alert('Error', 'No se pudieron cargar los buses');
     } finally {
       setLoadingBuses(false);
+    }
+  }
+
+  // Cargar lista de trabajos
+  async function cargarTrabajos() {
+    setLoadingTrabajos(true);
+    try {
+      const trabajosData = await obtenerTrabajos();
+      setTrabajos(trabajosData || []);
+    } catch (error) {
+      console.error('Error cargando trabajos:', error);
+      Alert.alert('Error', 'No se pudieron cargar los trabajos');
+    } finally {
+      setLoadingTrabajos(false);
     }
   }
 

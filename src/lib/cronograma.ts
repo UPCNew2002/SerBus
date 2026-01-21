@@ -286,6 +286,34 @@ export async function obtenerBusesEmpresa(
 }
 
 /**
+ * Obtener lista de trabajos disponibles
+ *
+ * @returns Lista de trabajos
+ *
+ * @example
+ * const trabajos = await obtenerTrabajos();
+ * console.log(`${trabajos.length} trabajos disponibles`);
+ */
+export async function obtenerTrabajos(): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('trabajos')
+      .select('*')
+      .order('nombre', { ascending: true });
+
+    if (error) {
+      console.error('Error obteniendo trabajos:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error obteniendo trabajos:', error);
+    return [];
+  }
+}
+
+/**
  * Obtener lista de OTs de una empresa
  *
  * @param empresaId - ID de la empresa
