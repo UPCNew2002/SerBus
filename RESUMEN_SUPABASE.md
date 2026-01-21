@@ -36,21 +36,34 @@
 - ✅ Trabajos cargados desde Supabase (10 trabajos)
 - ✅ Datos adicionales (productos, precios, evidencia) en JSON
 - ✅ Validaciones y manejo de errores
+- ✅ Pantalla DetalleOTScreen completa con trabajos, productos, precios
+- ✅ Pantalla CronogramaScreen con alertas y filtros
+- ✅ Trabajos mostrados en tarjetas de lista de OTs
+
+### Fase 10: Optimización para producción
+- ✅ Índices en tablas principales para performance
+- ✅ Optimización de funciones RPC existentes
+- ✅ Nuevas funciones: paginación, búsqueda rápida
+- ✅ Queries optimizadas con CTE y parallel workers
 
 ## 📂 ARCHIVOS CREADOS/MODIFICADOS
 
 ### SQL
-- `funciones_cronograma.sql` - Funciones PostgreSQL
-- `datos_prueba.sql` - Datos de prueba
+- `funciones_cronograma.sql` - Funciones PostgreSQL (6 funciones RPC)
+- `datos_prueba.sql` - Datos de prueba (10 trabajos, 10 buses, 3 OTs)
+- `indices_performance.sql` - Índices para optimización de performance
+- `optimizaciones_queries.sql` - Queries optimizadas y nuevas funciones
 
 ### TypeScript/JavaScript
 - `src/lib/supabase.ts` - Cliente Supabase con mapeo Gmail
-- `src/lib/cronograma.ts` - Funciones: `crearOT()`, `actualizarKilometraje()`, `obtenerBusesEmpresa()`, `obtenerOTsEmpresa()`, `obtenerTrabajos()`
+- `src/lib/cronograma.ts` - Funciones: `crearOT()`, `actualizarKilometraje()`, `obtenerBusesEmpresa()`, `obtenerOTsEmpresa()`, `obtenerOTCompleta()`, `obtenerTrabajos()`
 - `src/screens/admin/AdminHomeScreen.js` - Dashboard con estadísticas
 - `src/screens/admin/RegistrarOTScreen.js` - Registrar OT con guardado a Supabase
-- `src/screens/admin/OTsListScreen.js` - Lista de OTs desde Supabase
-- `src/screens/admin/ListaBusesScreen.js` - Lista completa de buses
-- `src/navigation/AppNavigator.js` - Ruta ListaBuses agregada
+- `src/screens/admin/OTsListScreen.js` - Lista de OTs desde Supabase con trabajos
+- `src/screens/admin/DetalleOTScreen.js` - Detalle completo de OT (bus, trabajos, productos, precios, evidencia)
+- `src/screens/admin/CronogramaScreen.js` - Cronograma de mantenimiento con alertas y filtros
+- `src/screens/admin/ListaBusesScreen.js` - Lista completa de buses con búsqueda
+- `src/navigation/AppNavigator.js` - Rutas agregadas
 
 ## 🔑 CREDENCIALES
 
@@ -139,14 +152,40 @@ Ver `src/lib/supabase.ts` para URL y anon key
 
 ### Ver OTs
 1. Pantalla carga con `obtenerOTsEmpresa()`
-2. Query con JOIN a `buses` y `perfiles`
+2. Query con JOIN a `buses`, `perfiles` y `ots_trabajos`
 3. Muestra 3 OTs de prueba + OTs nuevas
 4. Datos extra parseados desde `observaciones`
 
-## 📝 PENDIENTES FASE 10
+## ⚡ PERFORMANCE Y OPTIMIZACIÓN
 
-- [ ] Optimizar queries para producción
-- [ ] Índices en tablas para performance
+### Índices creados (indices_performance.sql):
+- **ots**: empresa_id, bus_id, trabajador_id, estado, fecha_inicio
+- **buses**: empresa_id, placa, activo
+- **ots_trabajos**: ot_id, trabajo_id
+- **perfiles**: username, email, empresa_id, rol
+- **trabajos**: nombre
+- Índices compuestos para queries frecuentes
+- Índices case-insensitive para búsquedas
+
+### Optimizaciones implementadas:
+1. **estadisticas_ots**: CTE para evitar múltiples scans
+2. **buses_necesitan_mantenimiento**: Cálculo de urgencia en SQL
+3. **obtener_ots_paginadas**: Nueva función con paginación
+4. **buscar_buses**: Búsqueda rápida con índices optimizados
+
+### Recomendaciones de uso:
+- Ejecutar `ANALYZE` después de insertar muchos datos
+- Monitorear queries lentas con `pg_stat_statements`
+- Usar paginación para listas grandes (>100 items)
+- Índices GIN disponibles para búsqueda full-text
+
+## 📝 PENDIENTES (FUTURO)
+
+- ✅ Optimizar queries para producción
+- ✅ Índices en tablas para performance
 - [ ] Logs de errores en Sentry/similar
 - [ ] Migrar productos a tabla separada (opcional)
 - [ ] Upload real de imágenes a Supabase Storage
+- [ ] Notificaciones push para alertas de mantenimiento
+- [ ] Exportar reportes a PDF/Excel
+- [ ] Dashboard de métricas en tiempo real
