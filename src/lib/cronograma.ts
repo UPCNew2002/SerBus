@@ -317,7 +317,7 @@ export async function obtenerTrabajos(): Promise<any[]> {
  * Obtener lista de OTs de una empresa
  *
  * @param empresaId - ID de la empresa
- * @returns Lista de OTs con información de bus y trabajador
+ * @returns Lista de OTs con información de bus, trabajador y trabajos
  *
  * @example
  * const ots = await obtenerOTsEmpresa(1);
@@ -330,7 +330,12 @@ export async function obtenerOTsEmpresa(empresaId: number): Promise<any[]> {
       .select(`
         *,
         buses:bus_id (placa, vin, marca, modelo, anio),
-        perfiles:trabajador_id (nombre)
+        perfiles:trabajador_id (nombre),
+        ots_trabajos (
+          id,
+          estado,
+          trabajos:trabajo_id (id, nombre, descripcion)
+        )
       `)
       .eq('empresa_id', empresaId)
       .order('fecha_inicio', { ascending: false });

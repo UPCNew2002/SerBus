@@ -82,7 +82,11 @@ export default function OTsListScreen({ navigation }) {
         marca: ot.buses?.marca || '',
         modelo: ot.buses?.modelo || '',
         kilometraje: ot.kilometraje || 0,
-        trabajos: [], // Los trabajos se cargarían de ots_trabajos si fuera necesario
+        trabajos: (ot.ots_trabajos || []).map(otTrabajo => ({
+          id: otTrabajo.trabajos?.id,
+          nombre: otTrabajo.trabajos?.nombre || 'Trabajo',
+          entraCronograma: false, // Por ahora siempre false, se puede mejorar después
+        })),
         precioProductos: datosAdicionales.precioProductos || 0,
         precioServicios: datosAdicionales.precioServicios || 0,
         evidencia: datosAdicionales.evidencia || null,
