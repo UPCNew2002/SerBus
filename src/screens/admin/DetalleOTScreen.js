@@ -1,31 +1,25 @@
 // src/screens/admin/DetalleOTScreen.js
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
+  TouchableOpacity,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import useOTsStore from '../../store/otsStore';
-import { obtenerDetalleOT } from '../../lib/cronograma';
+import { obtenerOTCompleta } from '../../lib/cronograma';
 
 export default function DetalleOTScreen({ route, navigation }) {
   const { otId } = route.params;
-  const { obtenerOT } = useOTsStore();
-
-  const [detalle, setDetalle] = useState(null);
+  const [ot, setOt] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  // Intentar cargar desde el store local primero
-  const otLocal = obtenerOT(otId);
 
   useEffect(() => {
     cargarDetalle();
@@ -33,28 +27,36 @@ export default function DetalleOTScreen({ route, navigation }) {
 
   async function cargarDetalle() {
     setLoading(true);
-    setError(false);
     try {
-      // Intentar obtener detalle desde Supabase
-      const detalleSupabase = await obtenerDetalleOT(otId);
-      if (detalleSupabase) {
-        setDetalle(detalleSupabase);
-      } else {
-        // Si no hay en Supabase, usar datos locales
-        if (otLocal) {
-          setDetalle({ ot: otLocal });
-        } else {
-          setError(true);
+      const data = await obtenerOTCompleta(otId);
+      if (data) {
+        // Parsear observaciones
+        let datosAdicionales = {
+          servicios: '',
+          productos: [],
+          precioProductos: 0,
+          precioServicios: 0,
+          precioTotal: 0,
+          evidencia: null,
+        };
+
+        if (data.observaciones) {
+          try {
+            datosAdicionales = JSON.parse(data.observaciones);
+          } catch (error) {
+            // Texto simple
+          }
         }
-      }
-    } catch (err) {
-      console.error('Error cargando detalle de OT:', err);
-      // Fallback a datos locales si Supabase falla
-      if (otLocal) {
-        setDetalle({ ot: otLocal });
+
+        setOt({ ...data, datosAdicionales });
       } else {
-        setError(true);
+        Alert.alert('Error', 'No se pudo cargar la OT');
+        navigation.goBack();
       }
+    } catch (error) {
+      console.error('Error cargando detalle OT:', error);
+      Alert.alert('Error', 'Error al cargar la OT');
+      navigation.goBack();
     } finally {
       setLoading(false);
     }
@@ -62,153 +64,292 @@ export default function DetalleOTScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Cargando detalle de OT...</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Cargando OT...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
-  if (error || !detalle) {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Ionicons name="alert-circle" size={60} color={COLORS.statusDanger} />
-        <Text style={styles.errorText}>OT no encontrada</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.retryButtonText}>Volver</Text>
-        </TouchableOpacity>
-      </View>
-    );
+  if (!ot) {
+    return null;
   }
 
-  const ot = detalle.ot || detalle;
+  const estadoColor = {
+    pendiente: COLORS.statusWarning,
+    en_proceso: COLORS.accent,
+    completado: COLORS.statusSuccess,
+    cancelado: COLORS.statusDanger,
+  };
+
+  const estadoTexto = {
+    pendiente: 'Pendiente',
+    en_proceso: 'En Proceso',
+    completado: 'Completado',
+    cancelado: 'Cancelado',
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{ot.numeroOT}</Text>
+        <View style={styles.headerTitleBox}>
+          <Text style={styles.headerTitle}>DETALLE DE OT</Text>
+          <Text style={styles.headerSubtitle}>{ot.numero_ot}</Text>
+        </View>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
-        style={styles.scrollContent}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Datos Básicos */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DATOS BÁSICOS</Text>
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar" size={18} color={COLORS.textMuted} />
-            <Text style={styles.infoLabel}>Fecha:</Text>
-            <Text style={styles.infoValue}>
-              {new Date(ot.fecha).toLocaleDateString('es-PE')}
-            </Text>
-          </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Estado */}
+        <View style={[styles.estadoBadge, { backgroundColor: estadoColor[ot.estado] }]}>
+          <Text style={styles.estadoText}>{estadoTexto[ot.estado]}</Text>
         </View>
 
-        {/* Vehículo */}
+        {/* Información del Bus */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>VEHÍCULO</Text>
-          <View style={styles.infoRow}>
-            <Ionicons name="car" size={18} color={COLORS.textMuted} />
-            <Text style={styles.infoLabel}>Placa:</Text>
-            <Text style={styles.infoValue}>{ot.placa}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="barcode" size={18} color={COLORS.textMuted} />
-            <Text style={styles.infoLabel}>VIN:</Text>
-            <Text style={styles.infoValueMono}>{ot.vin}</Text>
-          </View>
-          {ot.kilometraje && (
-            <View style={styles.infoRow}>
-              <Ionicons name="speedometer" size={18} color={COLORS.accent} />
-              <Text style={styles.infoLabel}>Kilometraje:</Text>
-              <Text style={styles.infoValue}>
-                {ot.kilometraje.toLocaleString()} km
-              </Text>
+          <View style={styles.card}>
+            <View style={styles.cardRow}>
+              <View style={styles.iconBox}>
+                <Ionicons name="bus" size={24} color={COLORS.primary} />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardLabel}>Placa</Text>
+                <Text style={styles.cardValue}>{ot.buses?.placa || 'N/A'}</Text>
+              </View>
             </View>
-          )}
-        </View>
 
-        {/* Trabajos Realizados */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>TRABAJOS REALIZADOS</Text>
-          {ot.trabajos.map((trabajo, index) => (
-            <View key={index} style={styles.trabajoItem}>
-              <Ionicons
-                name={trabajo.entraCronograma ? 'calendar' : 'construct'}
-                size={20}
-                color={trabajo.entraCronograma ? COLORS.primary : COLORS.textMuted}
-              />
-              <Text style={styles.trabajoNombre}>{trabajo.nombre}</Text>
-              {trabajo.entraCronograma && (
-                <View style={styles.cronogramaBadge}>
-                  <Text style={styles.cronogramaBadgeText}>Cronograma</Text>
-                </View>
-              )}
+            <View style={styles.separator} />
+
+            <View style={styles.cardRow}>
+              <View style={styles.iconBox}>
+                <Ionicons name="barcode" size={20} color={COLORS.textMuted} />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardLabel}>VIN</Text>
+                <Text style={styles.cardValue}>{ot.buses?.vin || 'N/A'}</Text>
+              </View>
             </View>
-          ))}
-        </View>
 
-        {/* Servicios */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DESCRIPCIÓN DE SERVICIOS</Text>
-          <Text style={styles.serviciosText}>{ot.servicios}</Text>
-        </View>
+            <View style={styles.separator} />
 
-        {/* Productos */}
-        {ot.productos && ot.productos.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>PRODUCTOS UTILIZADOS</Text>
-            {ot.productos.map((producto, index) => (
-              <View key={index} style={styles.productoItem}>
-                <View style={styles.productoInfo}>
-                  <Text style={styles.productoNombre}>{producto.nombre}</Text>
-                  <Text style={styles.productoDetalle}>
-                    {producto.cantidad || 0} × S/ {(producto.precio || 0).toFixed(2)}
-                  </Text>
-                </View>
-                <Text style={styles.productoTotal}>
-                  S/ {((producto.cantidad || 0) * (producto.precio || 0)).toFixed(2)}
+            <View style={styles.cardRow}>
+              <View style={styles.iconBox}>
+                <Ionicons name="car-sport" size={20} color={COLORS.textMuted} />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardLabel}>Marca y Modelo</Text>
+                <Text style={styles.cardValue}>
+                  {ot.buses?.marca} {ot.buses?.modelo} ({ot.buses?.anio})
                 </Text>
               </View>
-            ))}
+            </View>
+
+            {ot.kilometraje > 0 && (
+              <>
+                <View style={styles.separator} />
+                <View style={styles.cardRow}>
+                  <View style={styles.iconBox}>
+                    <Ionicons name="speedometer" size={20} color={COLORS.accent} />
+                  </View>
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardLabel}>Kilometraje</Text>
+                    <Text style={styles.cardValue}>{ot.kilometraje?.toLocaleString()} km</Text>
+                  </View>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* Fechas */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>FECHAS</Text>
+          <View style={styles.card}>
+            <View style={styles.cardRow}>
+              <View style={styles.iconBox}>
+                <Ionicons name="calendar" size={20} color={COLORS.primary} />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardLabel}>Fecha de Inicio</Text>
+                <Text style={styles.cardValue}>
+                  {new Date(ot.fecha_inicio).toLocaleDateString('es-PE', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            {ot.fecha_fin && (
+              <>
+                <View style={styles.separator} />
+                <View style={styles.cardRow}>
+                  <View style={styles.iconBox}>
+                    <Ionicons name="checkmark-circle" size={20} color={COLORS.statusSuccess} />
+                  </View>
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardLabel}>Fecha de Finalización</Text>
+                    <Text style={styles.cardValue}>
+                      {new Date(ot.fecha_fin).toLocaleDateString('es-PE', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* Trabajador */}
+        {ot.perfiles && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>TRABAJADOR ASIGNADO</Text>
+            <View style={styles.card}>
+              <View style={styles.cardRow}>
+                <View style={styles.iconBox}>
+                  <Ionicons name="person" size={20} color={COLORS.accent} />
+                </View>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardValue}>{ot.perfiles.nombre}</Text>
+                  <Text style={styles.cardLabel}>@{ot.perfiles.username}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Trabajos Realizados */}
+        {ot.ots_trabajos && ot.ots_trabajos.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>TRABAJOS REALIZADOS</Text>
+            <View style={styles.card}>
+              {ot.ots_trabajos.map((otTrabajo, index) => (
+                <View key={otTrabajo.id}>
+                  {index > 0 && <View style={styles.separator} />}
+                  <View style={styles.trabajoItem}>
+                    <View style={styles.trabajoHeader}>
+                      <Ionicons name="construct" size={18} color={COLORS.primary} />
+                      <Text style={styles.trabajoNombre}>
+                        {otTrabajo.trabajos?.nombre || 'Trabajo'}
+                      </Text>
+                    </View>
+                    {otTrabajo.trabajos?.descripcion && (
+                      <Text style={styles.trabajoDescripcion}>
+                        {otTrabajo.trabajos.descripcion}
+                      </Text>
+                    )}
+                    {otTrabajo.notas && (
+                      <Text style={styles.trabajoNotas}>📝 {otTrabajo.notas}</Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Descripción de Servicios */}
+        {ot.datosAdicionales?.servicios && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>DESCRIPCIÓN DE SERVICIOS</Text>
+            <View style={styles.card}>
+              <Text style={styles.descripcionText}>{ot.datosAdicionales.servicios}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Productos */}
+        {ot.datosAdicionales?.productos && ot.datosAdicionales.productos.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PRODUCTOS UTILIZADOS</Text>
+            <View style={styles.card}>
+              {ot.datosAdicionales.productos.map((producto, index) => (
+                <View key={index}>
+                  {index > 0 && <View style={styles.separator} />}
+                  <View style={styles.productoItem}>
+                    <View style={styles.productoHeader}>
+                      <Text style={styles.productoNombre}>{producto.nombre}</Text>
+                      <Text style={styles.productoTotal}>
+                        S/ {(producto.cantidad * producto.precio).toFixed(2)}
+                      </Text>
+                    </View>
+                    <Text style={styles.productoDetalle}>
+                      Cantidad: {producto.cantidad} × S/ {producto.precio.toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
         {/* Precios */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>RESUMEN DE COSTOS</Text>
-          <View style={styles.precioRow}>
-            <Text style={styles.precioLabel}>Productos:</Text>
-            <Text style={styles.precioValue}>S/ {(ot.precioProductos || 0).toFixed(2)}</Text>
-          </View>
-          <View style={styles.precioRow}>
-            <Text style={styles.precioLabel}>Servicios:</Text>
-            <Text style={styles.precioValue}>S/ {(ot.precioServicios || 0).toFixed(2)}</Text>
-          </View>
-          <View style={styles.precioTotalRow}>
-            <Text style={styles.precioTotalLabel}>TOTAL:</Text>
-            <Text style={styles.precioTotalValue}>S/ {(ot.precioTotal || 0).toFixed(2)}</Text>
+          <Text style={styles.sectionTitle}>COSTOS</Text>
+          <View style={styles.card}>
+            <View style={styles.precioRow}>
+              <Text style={styles.precioLabel}>Productos</Text>
+              <Text style={styles.precioValue}>
+                S/ {(ot.datosAdicionales?.precioProductos || 0).toFixed(2)}
+              </Text>
+            </View>
+
+            <View style={styles.separator} />
+
+            <View style={styles.precioRow}>
+              <Text style={styles.precioLabel}>Servicios (Mano de Obra)</Text>
+              <Text style={styles.precioValue}>
+                S/ {(ot.datosAdicionales?.precioServicios || 0).toFixed(2)}
+              </Text>
+            </View>
+
+            <View style={styles.separator} />
+
+            <View style={styles.precioRow}>
+              <Text style={styles.precioLabelTotal}>TOTAL</Text>
+              <Text style={styles.precioValueTotal}>
+                S/ {(ot.datosAdicionales?.precioTotal || 0).toFixed(2)}
+              </Text>
+            </View>
           </View>
         </View>
 
         {/* Evidencia */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>EVIDENCIA FOTOGRÁFICA</Text>
-          <Image source={{ uri: ot.evidencia }} style={styles.evidenciaImage} />
-        </View>
+        {ot.datosAdicionales?.evidencia && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>EVIDENCIA FOTOGRÁFICA</Text>
+            <View style={styles.card}>
+              <Image
+                source={{ uri: ot.datosAdicionales.evidencia }}
+                style={styles.evidenciaImage}
+                resizeMode="cover"
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Observaciones (texto simple) */}
+        {typeof ot.observaciones === 'string' &&
+          !ot.observaciones.startsWith('{') &&
+          ot.observaciones.trim() && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>OBSERVACIONES</Text>
+              <View style={styles.card}>
+                <Text style={styles.descripcionText}>{ot.observaciones}</Text>
+              </View>
+            </View>
+          )}
 
         <View style={{ height: 30 }} />
       </ScrollView>
@@ -221,13 +362,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 15,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: COLORS.card,
     paddingHorizontal: 15,
-    paddingVertical: 15,
+    paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: COLORS.primary,
   },
@@ -237,116 +388,141 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerTitleBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.text,
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
   },
-  scrollContent: {
-    flex: 1,
+  headerSubtitle: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
   content: {
-    padding: 20,
+    flex: 1,
+    padding: 15,
+  },
+  estadoBadge: {
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  estadoText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    letterSpacing: 1,
   },
   section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 10,
+    letterSpacing: 1.5,
+  },
+  card: {
     backgroundColor: COLORS.card,
-    padding: 15,
     borderRadius: 12,
-    marginBottom: 15,
+    padding: 15,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: 15,
-    letterSpacing: 1.5,
-  },
-  infoRow: {
+  cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
+    gap: 12,
   },
-  infoLabel: {
-    fontSize: 14,
+  iconBox: {
+    width: 40,
+    height: 40,
+    backgroundColor: COLORS.backgroundLight,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardLabel: {
+    fontSize: 11,
     color: COLORS.textMuted,
-    width: 100,
+    marginBottom: 3,
   },
-  infoValue: {
-    flex: 1,
-    fontSize: 14,
+  cardValue: {
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS.text,
   },
-  infoValueMono: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.text,
-    fontFamily: 'monospace',
+  separator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 12,
   },
   trabajoItem: {
+    gap: 8,
+  },
+  trabajoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    gap: 8,
   },
   trabajoNombre: {
-    flex: 1,
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '600',
     color: COLORS.text,
-    fontWeight: '600',
   },
-  cronogramaBadge: {
-    backgroundColor: COLORS.backgroundLight,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+  trabajoDescripcion: {
+    fontSize: 13,
+    color: COLORS.textLight,
+    lineHeight: 18,
   },
-  cronogramaBadgeText: {
-    fontSize: 10,
-    color: COLORS.accent,
-    fontWeight: '600',
+  trabajoNotas: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    fontStyle: 'italic',
   },
-  serviciosText: {
+  descripcionText: {
     fontSize: 14,
     color: COLORS.textLight,
     lineHeight: 20,
   },
   productoItem: {
+    gap: 5,
+  },
+  productoHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  productoInfo: {
-    flex: 1,
+    alignItems: 'center',
   },
   productoNombre: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 3,
+  },
+  productoTotal: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: COLORS.accent,
   },
   productoDetalle: {
     fontSize: 12,
     color: COLORS.textMuted,
   },
-  productoTotal: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: COLORS.accent,
-  },
   precioRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
+    paddingVertical: 5,
   },
   precioLabel: {
     fontSize: 14,
@@ -355,59 +531,21 @@ const styles = StyleSheet.create({
   precioValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textLight,
+    color: COLORS.text,
   },
-  precioTotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    marginTop: 8,
-    borderTopWidth: 2,
-    borderTopColor: COLORS.primary,
-  },
-  precioTotalLabel: {
+  precioLabelTotal: {
     fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.text,
   },
-  precioTotalValue: {
-    fontSize: 20,
+  precioValueTotal: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.primary,
   },
   evidenciaImage: {
     width: '100%',
-    height: 250,
-    borderRadius: 12,
-    backgroundColor: COLORS.backgroundLight,
-  },
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    color: COLORS.textMuted,
-    marginTop: 15,
-    fontSize: 14,
-  },
-  errorText: {
-    color: COLORS.statusDanger,
-    textAlign: 'center',
-    marginTop: 15,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  retryButton: {
-    marginTop: 20,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  retryButtonText: {
-    color: COLORS.text,
-    fontWeight: '600',
-    fontSize: 14,
+    height: 300,
+    borderRadius: 8,
   },
 });

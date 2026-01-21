@@ -486,3 +486,42 @@ export async function actualizarKilometraje(busId: number, kilometraje: number) 
     return false;
   }
 }
+
+/**
+ * Obtener detalle completo de una OT con trabajos
+ *
+ * @param otId - ID de la OT
+ * @returns Detalle completo de la OT
+ *
+ * @example
+ * const detalle = await obtenerOTCompleta(1);
+ */
+export async function obtenerOTCompleta(otId: number): Promise<any | null> {
+  try {
+    const { data, error } = await supabase
+      .from('ots')
+      .select(`
+        *,
+        buses:bus_id (*),
+        perfiles:trabajador_id (nombre, username),
+        ots_trabajos (
+          id,
+          estado,
+          notas,
+          trabajos:trabajo_id (*)
+        )
+      `)
+      .eq('id', otId)
+      .single();
+
+    if (error) {
+      console.error('Error obteniendo OT completa:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error obteniendo OT completa:', error);
+    return null;
+  }
+}
