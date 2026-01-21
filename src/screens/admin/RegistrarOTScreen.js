@@ -20,7 +20,7 @@ import { COLORS } from '../../constants/colors';
 import useOTsStore from '../../store/otsStore';
 import useTrabajosStore from '../../store/trabajosStore';
 import useAuthStore from '../../store/authStore';
-import { generarNumeroOT, obtenerBusesEmpresa } from '../../lib/cronograma';
+import { generarNumeroOT, obtenerBusesEmpresa, crearOT, actualizarKilometraje } from '../../lib/cronograma';
 
 export default function RegistrarOTScreen({ navigation }) {
   // Estados del formulario
@@ -49,7 +49,7 @@ export default function RegistrarOTScreen({ navigation }) {
 
   const { agregarOT, existeNumeroOT } = useOTsStore();
   const { trabajos } = useTrabajosStore();
-  const { empresa } = useAuthStore();
+  const { empresa, user } = useAuthStore();
 
   // Generar número de OT automáticamente al cargar
   useEffect(() => {
@@ -189,30 +189,15 @@ export default function RegistrarOTScreen({ navigation }) {
   };
 
   // Validar y guardar
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     // Validaciones
     if (!numeroOT.trim()) {
       Alert.alert('Error', 'El número de OT es obligatorio');
       return;
     }
 
-    if (existeNumeroOT(numeroOT)) {
-      Alert.alert('Error', 'Ya existe una OT con ese número');
-      return;
-    }
-
-    if (!placa.trim()) {
-      Alert.alert('Error', 'La placa es obligatoria');
-      return;
-    }
-
-    if (!vin.trim()) {
-      Alert.alert('Error', 'El VIN es obligatorio');
-      return;
-    }
-
-    if (vin.length !== 17) {
-      Alert.alert('Error', 'El VIN debe tener exactamente 17 caracteres');
+    if (!busSeleccionado) {
+      Alert.alert('Error', 'Debes seleccionar un bus de la flota');
       return;
     }
 
@@ -236,40 +221,62 @@ export default function RegistrarOTScreen({ navigation }) {
       return;
     }
 
-    // Guardar
+    // Guardar a Supabase
     setLoading(true);
-    setTimeout(() => {
+    try {
       const totalProductos = calcularTotalProductos();
       const totalServicios = parseFloat(precioServicios);
       const precioTotal = totalProductos + totalServicios;
 
-      agregarOT({
-        numeroOT: numeroOT.toUpperCase(),
-        fecha,
-        placa: placa.toUpperCase(),
-        vin: vin.toUpperCase(),
-        kilometraje: kilometraje ? parseInt(kilometraje) : null,
-        trabajos: trabajosSeleccionados,
+      // Preparar datos adicionales para observaciones (JSON)
+      const datosAdicionales = {
         servicios: servicios.trim(),
         productos: productos,
         precioProductos: totalProductos,
         precioServicios: totalServicios,
         precioTotal: precioTotal,
         evidencia: evidencia.uri,
-        empresaId: empresa?.id || 1,
+      };
+
+      // Crear OT en Supabase
+      const ot = await crearOT({
+        empresa_id: empresa.id,
+        bus_id: busSeleccionado.id,
+        trabajador_id: user?.id || null,
+        numero_ot: numeroOT.toUpperCase(),
+        fecha_inicio: fecha,
+        observaciones: JSON.stringify(datosAdicionales),
+        trabajos_ids: trabajosSeleccionados.map((t) => t.id),
       });
 
+      if (!ot) {
+        Alert.alert('Error', 'No se pudo crear la OT. Intenta nuevamente.');
+        setLoading(false);
+        return;
+      }
+
+      // Actualizar kilometraje del bus si cambió
+      if (kilometraje && parseInt(kilometraje) !== busSeleccionado.kilometraje_actual) {
+        await actualizarKilometraje(busSeleccionado.id, parseInt(kilometraje));
+      }
+
+      // Mostrar éxito
       Alert.alert(
         '✅ OT Registrada',
-        `OT ${numeroOT} registrada correctamente\n\nProductos: S/ ${totalProductos.toFixed(2)}\nServicios: S/ ${totalServicios.toFixed(2)}\nTotal: S/ ${precioTotal.toFixed(2)}\n\n${
-          kilometraje && trabajosSeleccionados.some((t) => t.entraCronograma)
-            ? '📅 El cronograma se actualizará automáticamente'
-            : '📋 Registrado solo en historial'
-        }`,
+        `OT ${numeroOT} registrada correctamente en Supabase\n\n` +
+        `Bus: ${busSeleccionado.placa}\n` +
+        `Productos: S/ ${totalProductos.toFixed(2)}\n` +
+        `Servicios: S/ ${totalServicios.toFixed(2)}\n` +
+        `Total: S/ ${precioTotal.toFixed(2)}\n\n` +
+        `${kilometraje ? '✅ Kilometraje actualizado' : ''}`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
+    } catch (error) {
+      console.error('Error guardando OT:', error);
+      Alert.alert('Error', 'Ocurrió un error al guardar la OT. Revisa la consola.');
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
