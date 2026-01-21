@@ -285,6 +285,40 @@ export async function obtenerBusesEmpresa(
   }
 }
 
+/**
+ * Obtener lista de OTs de una empresa
+ *
+ * @param empresaId - ID de la empresa
+ * @returns Lista de OTs con información de bus y trabajador
+ *
+ * @example
+ * const ots = await obtenerOTsEmpresa(1);
+ * console.log(`${ots.length} OTs encontradas`);
+ */
+export async function obtenerOTsEmpresa(empresaId: number): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('ots')
+      .select(`
+        *,
+        buses:bus_id (placa, vin, marca, modelo, anio),
+        perfiles:trabajador_id (nombre, apellido)
+      `)
+      .eq('empresa_id', empresaId)
+      .order('fecha_inicio', { ascending: false });
+
+    if (error) {
+      console.error('Error obteniendo OTs:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error obteniendo OTs:', error);
+    return [];
+  }
+}
+
 // ───────────────────────────────────────────────────────
 // FUNCIONES CRUD BÁSICAS
 // ───────────────────────────────────────────────────────
