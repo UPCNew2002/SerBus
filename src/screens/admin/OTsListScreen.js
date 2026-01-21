@@ -50,24 +50,44 @@ export default function OTsListScreen({ navigation }) {
 
   // Combinar OTs de Supabase con OTs locales (por si registraron alguna sin guardar)
   const otsEmpresa = [
-    ...otsSupabase.map(ot => ({
-      id: ot.id,
-      numeroOT: ot.numero_ot,
-      fecha: ot.fecha_inicio,
-      placa: ot.buses?.placa || 'N/A',
-      vin: ot.buses?.vin || 'N/A',
-      estado: ot.estado,
-      trabajador: ot.perfiles?.nombre || 'N/A',
-      marca: ot.buses?.marca || '',
-      modelo: ot.buses?.modelo || '',
-      kilometraje: ot.kilometraje || 0,
-      trabajos: [],
-      precioProductos: 0,
-      precioServicios: 0,
-      evidencia: null,
-      precioTotal: 0,
-      fromSupabase: true,
-    })),
+    ...otsSupabase.map(ot => {
+      // Parsear observaciones JSON si existe
+      let datosAdicionales = {
+        servicios: '',
+        productos: [],
+        precioProductos: 0,
+        precioServicios: 0,
+        precioTotal: 0,
+        evidencia: null,
+      };
+
+      if (ot.observaciones) {
+        try {
+          datosAdicionales = JSON.parse(ot.observaciones);
+        } catch (error) {
+          console.error('Error parseando observaciones:', error);
+        }
+      }
+
+      return {
+        id: ot.id,
+        numeroOT: ot.numero_ot || '',
+        fecha: ot.fecha_inicio || '',
+        placa: ot.buses?.placa || 'N/A',
+        vin: ot.buses?.vin || 'N/A',
+        estado: ot.estado || 'pendiente',
+        trabajador: ot.perfiles?.nombre || 'N/A',
+        marca: ot.buses?.marca || '',
+        modelo: ot.buses?.modelo || '',
+        kilometraje: ot.kilometraje || 0,
+        trabajos: [], // Los trabajos se cargarían de ots_trabajos si fuera necesario
+        precioProductos: datosAdicionales.precioProductos || 0,
+        precioServicios: datosAdicionales.precioServicios || 0,
+        evidencia: datosAdicionales.evidencia || null,
+        precioTotal: datosAdicionales.precioTotal || 0,
+        fromSupabase: true,
+      };
+    }),
     ...otsLocal.filter(ot => ot.empresaId === empresa?.id && !ot.fromSupabase)
   ];
 
@@ -80,9 +100,9 @@ export default function OTsListScreen({ navigation }) {
       const busquedaLower = busqueda.toLowerCase();
       resultado = resultado.filter(
         (ot) =>
-          ot.placa.toLowerCase().includes(busquedaLower) ||
-          ot.vin.toLowerCase().includes(busquedaLower) ||
-          ot.numeroOT.toLowerCase().includes(busquedaLower)
+          (ot.placa || '').toLowerCase().includes(busquedaLower) ||
+          (ot.vin || '').toLowerCase().includes(busquedaLower) ||
+          (ot.numeroOT || '').toLowerCase().includes(busquedaLower)
       );
     }
 
@@ -144,7 +164,7 @@ export default function OTsListScreen({ navigation }) {
           <Ionicons name="document-text" size={24} color={COLORS.primary} />
         </View>
         <View style={styles.otHeaderInfo}>
-          <Text style={styles.otNumero}>{item.numeroOT}</Text>
+          <Text style={styles.otNumero}>{item.numeroOT || 'N/A'}</Text>
           <Text style={styles.otFecha}>
             {new Date(item.fecha).toLocaleDateString('es-PE', {
               day: '2-digit',
@@ -162,10 +182,10 @@ export default function OTsListScreen({ navigation }) {
       {/* Vehículo */}
       <View style={styles.otVehiculo}>
         <Ionicons name="car" size={16} color={COLORS.textMuted} />
-        <Text style={styles.otPlaca}>{item.placa}</Text>
+        <Text style={styles.otPlaca}>{item.placa || 'N/A'}</Text>
         <Text style={styles.otSeparator}>•</Text>
-        <Text style={styles.otVin}>VIN: {item.vin.substring(0, 8)}...</Text>
-        {item.kilometraje && (
+        <Text style={styles.otVin}>VIN: {(item.vin || 'N/A').substring(0, 8)}...</Text>
+        {item.kilometraje > 0 && (
           <>
             <Text style={styles.otSeparator}>•</Text>
             <Ionicons name="speedometer" size={14} color={COLORS.accent} />
@@ -176,16 +196,16 @@ export default function OTsListScreen({ navigation }) {
 
       {/* Trabajos realizados */}
       <View style={styles.otTrabajos}>
-        {item.trabajos.slice(0, 2).map((trabajo, index) => (
+        {(item.trabajos || []).slice(0, 2).map((trabajo, index) => (
           <View key={index} style={styles.trabajoBadge}>
             <Text style={styles.trabajoBadgeText}>
-              {trabajo.entraCronograma ? '📅' : '🔧'} {trabajo.nombre}
+              {trabajo.entraCronograma ? '📅' : '🔧'} {trabajo.nombre || 'Trabajo'}
             </Text>
           </View>
         ))}
-        {item.trabajos.length > 2 && (
+        {(item.trabajos || []).length > 2 && (
           <View style={styles.trabajoBadge}>
-            <Text style={styles.trabajoBadgeText}>+{item.trabajos.length - 2}</Text>
+            <Text style={styles.trabajoBadgeText}>+{(item.trabajos || []).length - 2}</Text>
           </View>
         )}
       </View>
