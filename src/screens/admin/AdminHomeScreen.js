@@ -167,6 +167,7 @@ export default function AdminHomeScreen({ navigation }) {
             <Text style={[styles.menuTitle, { color: COLORS.text }]}>Flota de Buses</Text>
             <Text style={[styles.menuSubtitle, { color: COLORS.textMuted }]}>Ver todos los buses</Text>
             </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
         </TouchableOpacity>
 
         {/* Reportes */}
