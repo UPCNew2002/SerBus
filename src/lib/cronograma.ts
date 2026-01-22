@@ -146,18 +146,33 @@ export async function busesNecesitanMantenimiento(
   empresaId: number
 ): Promise<BusNecesitaMantenimiento[]> {
   try {
+    console.log('🔧 Consultando buses_necesitan_mantenimiento para empresa_id:', empresaId);
+
     const { data, error } = await supabase.rpc('buses_necesitan_mantenimiento', {
       p_empresa_id: empresaId,
     });
 
+    console.log('🔧 Respuesta de RPC buses_necesitan_mantenimiento:');
+    console.log('🔧 Data:', data);
+    console.log('🔧 Error:', error);
+
     if (error) {
-      console.error('Error obteniendo buses:', error.message);
+      console.error('❌ Error obteniendo buses:', error.message);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error hint:', error.hint);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+
+      // Si la función no existe o tiene problemas de estructura, retornar array vacío
+      console.warn('⚠️ Función RPC tiene problemas. Retornando array vacío para no bloquear la app.');
       return [];
     }
 
+    console.log(`✅ ${data?.length || 0} buses necesitan mantenimiento`);
     return data || [];
-  } catch (error) {
-    console.error('Error obteniendo buses:', error);
+  } catch (error: any) {
+    console.error('❌ Error en busesNecesitanMantenimiento:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     return [];
   }
 }
@@ -176,18 +191,31 @@ export async function obtenerEstadisticasOTs(
   empresaId: number
 ): Promise<EstadisticasOTs | null> {
   try {
+    console.log('📊 Consultando estadisticas_ots para empresa_id:', empresaId);
+
     const { data, error } = await supabase.rpc('estadisticas_ots', {
       p_empresa_id: empresaId,
     });
 
+    console.log('📊 Respuesta de RPC estadisticas_ots:');
+    console.log('📊 Data:', data);
+    console.log('📊 Error:', error);
+
     if (error) {
-      console.error('Error obteniendo estadísticas:', error.message);
+      console.error('❌ Error obteniendo estadísticas:', error.message);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error hint:', error.hint);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+      console.warn('⚠️ Función RPC tiene problemas. Retornando null para no bloquear la app.');
       return null;
     }
 
+    console.log('✅ Estadísticas obtenidas');
     return data && data.length > 0 ? data[0] : null;
-  } catch (error) {
-    console.error('Error obteniendo estadísticas:', error);
+  } catch (error: any) {
+    console.error('❌ Error en obtenerEstadisticasOTs:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     return null;
   }
 }
