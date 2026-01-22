@@ -174,7 +174,7 @@ export async function busesNecesitanMantenimiento(
       // Obtener el último mantenimiento del bus
       const { data: ultimoMant, error: mantError } = await supabase
         .from('ots')
-        .select('kilometraje_fin')
+        .select('kilometraje, fecha_fin')
         .eq('bus_id', bus.id)
         .eq('estado', 'completado')
         .order('fecha_fin', { ascending: false })
@@ -188,7 +188,8 @@ export async function busesNecesitanMantenimiento(
       }
 
       // Calcular km desde último mantenimiento
-      const kmUltimoMant = ultimoMant?.kilometraje_fin || 0;
+      // Si no hay kilometraje registrado en la OT, usar 0 (asumir que nunca tuvo mantenimiento)
+      const kmUltimoMant = ultimoMant?.kilometraje || 0;
       const kmProximoMant = kmUltimoMant + 5000; // Cada 5000 km
       const kmRestantes = kmProximoMant - bus.kilometraje_actual;
 
