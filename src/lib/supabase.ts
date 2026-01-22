@@ -147,23 +147,54 @@ export async function getSession() {
  */
 export async function getPerfilUsuario() {
   try {
-    const session = await getSession();
-    if (!session) return null;
+    console.log('📋 Iniciando getPerfilUsuario...');
 
-    const { data, error } = await supabase
+    const session = await getSession();
+    console.log('📋 Sesión obtenida:', session ? 'OK' : 'NULL');
+
+    if (!session) {
+      console.log('❌ No hay sesión activa');
+      return null;
+    }
+
+    console.log('📋 Consultando tabla perfiles para user.id:', session.user.id);
+    console.log('📋 Email del usuario:', session.user.email);
+
+    // Crear promesa con timeout de 10 segundos
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout: la consulta tardó más de 10 segundos')), 10000)
+    );
+
+    const queryPromise = supabase
       .from('perfiles')
       .select('*')
       .eq('id', session.user.id)
       .single();
 
+    console.log('📋 Ejecutando query con timeout...');
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+    console.log('📋 Query completada. Data:', data);
+    console.log('📋 Error:', error);
+
     if (error) {
-      console.error('Error obteniendo perfil:', error.message);
+      console.error('❌ Error obteniendo perfil:', error.message);
+      console.error('❌ Error completo:', JSON.stringify(error, null, 2));
+
+      // Si el error es "no rows", significa que no existe el perfil
+      if (error.code === 'PGRST116') {
+        console.error('❌ No existe perfil para este usuario. Crear perfil en Supabase.');
+      }
+
       return null;
     }
 
+    console.log('✅ Perfil obtenido exitosamente:', data);
     return data;
-  } catch (error) {
-    console.error('Error obteniendo perfil:', error);
+  } catch (error: any) {
+    console.error('❌ Error en getPerfilUsuario:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     return null;
   }
 }

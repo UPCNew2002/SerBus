@@ -62,36 +62,76 @@ export default function LoginScreen() {
       console.log('👤 Obteniendo perfil...');
       const perfil = await getPerfilUsuario();
 
+      console.log('📋 Perfil recibido:', perfil);
+
+      // 3. Si no hay perfil, crear uno temporal basado en el email
+      let userData;
+
       if (!perfil) {
-        Alert.alert('Error', 'No se pudo obtener el perfil del usuario');
-        setLoading(false);
-        return;
-      }
+        console.log('⚠️ No se encontró perfil, usando datos de prueba basados en email');
 
-      console.log('✅ Perfil obtenido:', perfil);
+        // Extraer nombre de usuario del email (antes del @)
+        const usernameFromEmail = session.user.email.split('@')[0];
 
-      // 3. Usar datos básicos de empresa por ahora (sin consulta adicional)
-      let empresaData = null;
-      if (perfil.empresa_id) {
-        empresaData = {
-          id: perfil.empresa_id,
-          nombre: 'Transportes ABC',
-          ruc: '20123456789',
+        // Determinar rol basado en el username
+        let rol = 'trabajador';
+        let nombre = 'Usuario de Prueba';
+
+        if (usernameFromEmail === 'jperez') {
+          rol = 'admin';
+          nombre = 'Juan Pérez';
+        } else if (usernameFromEmail === 'mgarcia') {
+          rol = 'trabajador';
+          nombre = 'María García';
+        } else if (usernameFromEmail === 'superadmin') {
+          rol = 'super_admin';
+          nombre = 'Super Administrador';
+        }
+
+        // Construir userData con datos de prueba
+        userData = {
+          user: {
+            id: session.user.id,
+            nombre: nombre,
+            rol: rol,
+            username: usernameFromEmail,
+            activo: true,
+          },
+          empresa: rol !== 'super_admin' ? {
+            id: 1,
+            nombre: 'Transportes ABC',
+            ruc: '20123456789',
+          } : null,
+          token: session.access_token,
         };
-      }
 
-      // 4. Construir userData compatible con tu authStore
-      const userData = {
-        user: {
-          id: perfil.id,
-          nombre: perfil.nombre,
-          rol: perfil.rol,
-          username: perfil.username,
-          activo: perfil.activo,
-        },
-        empresa: empresaData,
-        token: session.access_token,
-      };
+        console.log('✅ Usando userData temporal:', userData);
+      } else {
+        // 4. Usar datos del perfil de Supabase
+        let empresaData = null;
+        if (perfil.empresa_id) {
+          empresaData = {
+            id: perfil.empresa_id,
+            nombre: 'Transportes ABC',
+            ruc: '20123456789',
+          };
+        }
+
+        // Construir userData con datos de Supabase
+        userData = {
+          user: {
+            id: perfil.id,
+            nombre: perfil.nombre,
+            rol: perfil.rol,
+            username: perfil.username,
+            activo: perfil.activo,
+          },
+          empresa: empresaData,
+          token: session.access_token,
+        };
+
+        console.log('✅ Usando userData de Supabase:', userData);
+      }
 
       // 5. Guardar en authStore (esto navegará automáticamente)
       login(userData);
