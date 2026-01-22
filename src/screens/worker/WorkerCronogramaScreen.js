@@ -97,44 +97,45 @@ export default function WorkerCronogramaScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Kilometraje */}
+        {/* Días sin mantenimiento */}
         <View style={styles.kmRow}>
           <View style={styles.kmBox}>
-            <Text style={styles.kmLabel}>Actual</Text>
+            <Text style={styles.kmLabel}>Días sin mantenimiento</Text>
             <View style={styles.kmValueRow}>
-              <Ionicons name="speedometer" size={16} color={COLORS.accent} />
+              <Ionicons name="calendar" size={16} color={COLORS.accent} />
               <Text style={styles.kmValue}>
-                {item.kilometraje_actual?.toLocaleString()} km
+                {item.dias_sin_mantenimiento} días
               </Text>
             </View>
           </View>
 
-          <View style={styles.kmArrow}>
-            <Ionicons name="arrow-forward" size={16} color={COLORS.textMuted} />
-          </View>
+          {item.fecha_ultimo_mantenimiento && (
+            <>
+              <View style={styles.kmArrow}>
+                <Ionicons name="arrow-forward" size={16} color={COLORS.textMuted} />
+              </View>
 
-          <View style={styles.kmBox}>
-            <Text style={styles.kmLabel}>Próximo Mant.</Text>
-            <View style={styles.kmValueRow}>
-              <Ionicons name="construct" size={16} color={COLORS.primary} />
-              <Text style={styles.kmValue}>
-                {item.km_proximo_mantenimiento?.toLocaleString()} km
-              </Text>
-            </View>
-          </View>
+              <View style={styles.kmBox}>
+                <Text style={styles.kmLabel}>Último Mant.</Text>
+                <View style={styles.kmValueRow}>
+                  <Ionicons name="time" size={16} color={COLORS.primary} />
+                  <Text style={styles.kmValue}>
+                    {new Date(item.fecha_ultimo_mantenimiento).toLocaleDateString('es-ES')}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
         </View>
 
-        {/* Restantes */}
+        {/* Barra de progreso */}
         <View style={styles.restantesBox}>
           <View style={styles.progressBar}>
             <View
               style={[
                 styles.progressFill,
                 {
-                  width: `${Math.max(
-                    0,
-                    Math.min(100, (item.km_restantes / 10000) * 100)
-                  )}%`,
+                  width: `${Math.min(100, (item.dias_sin_mantenimiento / 90) * 100)}%`,
                   backgroundColor: urgenciaColor[item.urgencia],
                 },
               ]}
@@ -146,8 +147,10 @@ export default function WorkerCronogramaScreen({ navigation }) {
               { color: urgenciaColor[item.urgencia] },
             ]}
           >
-            {item.km_restantes > 0
-              ? `${item.km_restantes.toLocaleString()} km restantes`
+            {item.dias_sin_mantenimiento < 90
+              ? `Faltan ${90 - item.dias_sin_mantenimiento} días para mantenimiento`
+              : item.dias_sin_mantenimiento === 999
+              ? 'Nunca tuvo mantenimiento'
               : 'Mantenimiento vencido'}
           </Text>
         </View>
