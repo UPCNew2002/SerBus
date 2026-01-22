@@ -269,6 +269,8 @@ export async function obtenerBusesEmpresa(
   empresaId: number
 ): Promise<Bus[]> {
   try {
+    console.log('🚌 Consultando buses para empresa_id:', empresaId);
+
     const { data, error } = await supabase
       .from('buses')
       .select('*')
@@ -276,14 +278,23 @@ export async function obtenerBusesEmpresa(
       .eq('activo', true)
       .order('placa', { ascending: true });
 
+    console.log('🚌 Respuesta de Supabase:');
+    console.log('🚌 Data:', data);
+    console.log('🚌 Error:', error);
+
     if (error) {
-      console.error('Error obteniendo buses:', error.message);
+      console.error('❌ Error obteniendo buses:', error.message);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       return [];
     }
 
+    console.log(`✅ ${data?.length || 0} buses encontrados`);
     return data || [];
-  } catch (error) {
-    console.error('Error obteniendo buses:', error);
+  } catch (error: any) {
+    console.error('❌ Error obteniendo buses:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     return [];
   }
 }
