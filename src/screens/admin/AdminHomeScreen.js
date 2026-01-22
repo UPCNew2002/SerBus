@@ -102,7 +102,9 @@ export default function AdminHomeScreen({ navigation }) {
                   <View key={index} style={styles.alertBusRow}>
                     <Text style={[styles.alertBusPlaca, { color: COLORS.text }]}>{bus.placa}</Text>
                     <Text style={[styles.alertBusKm, { color: COLORS.textMuted }]}>
-                      {bus.km_restantes} km restantes
+                      {bus.dias_sin_mantenimiento === 999
+                        ? 'Sin mantenimiento'
+                        : `${bus.dias_sin_mantenimiento} días sin mant.`}
                     </Text>
                   </View>
                 ))}

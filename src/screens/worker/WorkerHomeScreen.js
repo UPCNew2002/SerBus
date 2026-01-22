@@ -103,7 +103,9 @@ export default function WorkerHomeScreen({ navigation }) {
                     <View style={styles.alertaBusInfo}>
                       <Text style={styles.alertaBusPlaca}>{bus.placa}</Text>
                       <Text style={styles.alertaBusKm}>
-                        {bus.km_restantes} km restantes
+                        {bus.dias_sin_mantenimiento === 999
+                          ? 'Sin mantenimiento'
+                          : `${bus.dias_sin_mantenimiento} días sin mant.`}
                       </Text>
                     </View>
                   </View>

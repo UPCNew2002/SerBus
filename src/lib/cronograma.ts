@@ -41,9 +41,8 @@ export interface BusNecesitaMantenimiento {
   marca: string;
   modelo: string;
   anio: number;
-  kilometraje_actual: number;
-  km_proximo_mantenimiento: number;
-  km_restantes: number;
+  dias_sin_mantenimiento: number;
+  fecha_ultimo_mantenimiento: string | null;
   urgencia: 'URGENTE' | 'PRONTO' | 'NORMAL';
   proximo_trabajo: string;
 }
@@ -170,13 +169,17 @@ export async function busesNecesitanMantenimiento(
     // Para cada bus, calcular si necesita mantenimiento
     const busesConMantenimiento: BusNecesitaMantenimiento[] = [];
  
+    // Fecha actual
+    const hoy = new Date();
+ 
     for (const bus of buses) {
       // Obtener el último mantenimiento del bus
       const { data: ultimoMant, error: mantError } = await supabase
         .from('ots')
-        .select('kilometraje_fin')
+        .select('fecha_fin')
         .eq('bus_id', bus.id)
         .eq('estado', 'completado')
+        .not('fecha_fin', 'is', null)
         .order('fecha_fin', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -187,21 +190,32 @@ export async function busesNecesitanMantenimiento(
         continue;
       }
  
-      // Calcular km desde último mantenimiento
-      const kmUltimoMant = ultimoMant?.kilometraje_fin || 0;
-      const kmProximoMant = kmUltimoMant + 5000; // Cada 5000 km
-      const kmRestantes = kmProximoMant - bus.kilometraje_actual;
+      // Calcular días desde último mantenimiento
+      let diasSinMantenimiento: number;
+      let fechaUltimoMantenimiento: string | null = null;
  
-      // Determinar urgencia
+      if (ultimoMant?.fecha_fin) {
+        // Tiene mantenimiento previo
+        fechaUltimoMantenimiento = ultimoMant.fecha_fin;
+        const fechaUltMant = new Date(ultimoMant.fecha_fin);
+        const diffTime = Math.abs(hoy.getTime() - fechaUltMant.getTime());
+        diasSinMantenimiento = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      } else {
+        // Nunca tuvo mantenimiento - considerarlo urgente (999 días)
+        diasSinMantenimiento = 999;
+      }
+ 
+      // Determinar urgencia basada en días
+      // Mantenimiento preventivo cada 90 días
       let urgencia: 'URGENTE' | 'PRONTO' | 'NORMAL' = 'NORMAL';
-      if (kmRestantes <= 0) {
+      if (diasSinMantenimiento >= 90) {
         urgencia = 'URGENTE';
-      } else if (kmRestantes <= 500) {
+      } else if (diasSinMantenimiento >= 75) {
         urgencia = 'PRONTO';
       }
  
-      // Si necesita mantenimiento pronto (menos de 1000 km), agregarlo a la lista
-      if (kmRestantes <= 1000) {
+      // Agregar solo buses que necesitan mantenimiento pronto (>= 75 días)
+      if (diasSinMantenimiento >= 75) {
         busesConMantenimiento.push({
           bus_id: bus.id,
           placa: bus.placa,
@@ -209,9 +223,8 @@ export async function busesNecesitanMantenimiento(
           marca: bus.marca,
           modelo: bus.modelo,
           anio: bus.anio,
-          kilometraje_actual: bus.kilometraje_actual,
-          km_proximo_mantenimiento: kmProximoMant,
-          km_restantes: kmRestantes,
+          dias_sin_mantenimiento: diasSinMantenimiento,
+          fecha_ultimo_mantenimiento: fechaUltimoMantenimiento,
           urgencia: urgencia,
           proximo_trabajo: 'Mantenimiento preventivo',
         });
