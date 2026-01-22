@@ -96,7 +96,7 @@ export default function WorkerHomeScreen({ navigation }) {
                   <Text style={styles.alertasTitle}>Buses Urgentes</Text>
                 </View>
                 {busesUrgentes.slice(0, 3).map((bus) => (
-                  <View key={bus.id} style={styles.alertaBus}>
+                  <View key={bus.bus_id} style={styles.alertaBus}>
                     <View style={styles.alertaBusIcon}>
                       <Ionicons name="bus" size={20} color={COLORS.statusDanger} />
                     </View>

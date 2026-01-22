@@ -288,7 +288,7 @@ export default function CronogramaScreen({ navigation }) {
       ) : (
         <FlatList
           data={busesFiltrados}
-          keyExtractor={(item) => item.id?.toString() || item.placa}
+          keyExtractor={(item) => item.bus_id?.toString() || item.placa}
           renderItem={renderBus}
           contentContainerStyle={styles.listContent}
           refreshControl={

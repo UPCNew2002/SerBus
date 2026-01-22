@@ -99,7 +99,7 @@ export default function AdminHomeScreen({ navigation }) {
                   </Text>
                 </View>
                 {busesUrgentes.slice(0, 3).map((bus) => (
-                  <View key={bus.id} style={styles.alertBusRow}>
+                  <View key={bus.bus_id} style={styles.alertBusRow}>
                     <Text style={[styles.alertBusPlaca, { color: COLORS.text }]}>{bus.placa}</Text>
                     <Text style={[styles.alertBusKm, { color: COLORS.textMuted }]}>
                       {bus.dias_sin_mantenimiento === 999
