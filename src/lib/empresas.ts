@@ -1,0 +1,331 @@
+// ═══════════════════════════════════════════════════════
+// FUNCIONES DE GESTIÓN DE EMPRESAS
+// ═══════════════════════════════════════════════════════
+//
+// Este archivo contiene funciones para:
+// - Crear empresas (super admin)
+// - Obtener información de empresas
+// - Actualizar empresas
+// - Verificar RUC duplicado
+//
+// ═══════════════════════════════════════════════════════
+ 
+import { supabase } from './supabase';
+ 
+// ───────────────────────────────────────────────────────
+// TIPOS
+// ───────────────────────────────────────────────────────
+ 
+export interface Empresa {
+  id: number;
+  ruc: string;
+  razon_social: string;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+ 
+export interface CrearEmpresaParams {
+  ruc: string;
+  razonSocial: string;
+  adminNombre: string;
+  adminUsuario: string;
+  adminPassword: string;
+}
+ 
+export interface ResultadoCrearEmpresa {
+  success: boolean;
+  empresa?: Empresa;
+  admin?: any;
+  error?: string;
+}
+ 
+// ───────────────────────────────────────────────────────
+// CREAR EMPRESA CON ADMIN
+// ───────────────────────────────────────────────────────
+ 
+/**
+ * Crea una nueva empresa junto con su usuario administrador
+ *
+ * Proceso:
+ * 1. Crea el usuario admin en Supabase Auth
+ * 2. Crea la empresa en la tabla empresas
+ * 3. Crea el perfil del admin vinculado a la empresa
+ *
+ * @param params - Datos de la empresa y admin
+ * @returns Resultado con empresa y admin creados
+ *
+ * @example
+ * const resultado = await crearEmpresaConAdmin({
+ *   ruc: '20123456789',
+ *   razonSocial: 'Transportes ABC',
+ *   adminNombre: 'Juan Pérez',
+ *   adminUsuario: 'jperez',
+ *   adminPassword: 'Admin123!'
+ * });
+ */
+export async function crearEmpresaConAdmin(
+  params: CrearEmpresaParams
+): Promise<ResultadoCrearEmpresa> {
+  try {
+    console.log('🏢 Creando empresa:', params.razonSocial);
+ 
+    // 1. Verificar que el RUC no exista
+    const rucExiste = await verificarRUCExiste(params.ruc);
+    if (rucExiste) {
+      return {
+        success: false,
+        error: 'Ya existe una empresa con ese RUC'
+      };
+    }
+ 
+    // 2. Crear usuario admin en Supabase Auth
+    const emailAdmin = `${params.adminUsuario}@gmail.com`;
+ 
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: emailAdmin,
+      password: params.adminPassword,
+      email_confirm: true, // Auto-confirmar email
+    });
+ 
+    if (authError) {
+      console.error('❌ Error creando usuario admin:', authError.message);
+      return {
+        success: false,
+        error: `Error al crear usuario: ${authError.message}`
+      };
+    }
+ 
+    console.log('✅ Usuario admin creado:', authData.user.id);
+ 
+    // 3. Crear empresa en la tabla
+    const { data: empresa, error: empresaError } = await supabase
+      .from('empresas')
+      .insert({
+        ruc: params.ruc,
+        razon_social: params.razonSocial,
+        activo: true
+      })
+      .select()
+      .single();
+ 
+    if (empresaError) {
+      console.error('❌ Error creando empresa:', empresaError.message);
+ 
+      // Rollback: eliminar el usuario de auth
+      await supabase.auth.admin.deleteUser(authData.user.id);
+ 
+      return {
+        success: false,
+        error: `Error al crear empresa: ${empresaError.message}`
+      };
+    }
+ 
+    console.log('✅ Empresa creada:', empresa.id);
+ 
+    // 4. Crear perfil del admin vinculado a la empresa
+    const { data: perfil, error: perfilError } = await supabase
+      .from('perfiles')
+      .insert({
+        id: authData.user.id, // Mismo ID que auth.users
+        nombre: params.adminNombre,
+        username: params.adminUsuario,
+        rol: 'admin',
+        empresa_id: empresa.id,
+        activo: true
+      })
+      .select()
+      .single();
+ 
+    if (perfilError) {
+      console.error('❌ Error creando perfil:', perfilError.message);
+ 
+      // Rollback: eliminar empresa y usuario
+      await supabase.from('empresas').delete().eq('id', empresa.id);
+      await supabase.auth.admin.deleteUser(authData.user.id);
+ 
+      return {
+        success: false,
+        error: `Error al crear perfil: ${perfilError.message}`
+      };
+    }
+ 
+    console.log('✅ Perfil admin creado:', perfil.id);
+ 
+    return {
+      success: true,
+      empresa: empresa,
+      admin: perfil
+    };
+ 
+  } catch (error: any) {
+    console.error('❌ Error en crearEmpresaConAdmin:', error);
+    return {
+      success: false,
+      error: error.message || 'Error desconocido'
+    };
+  }
+}
+ 
+// ───────────────────────────────────────────────────────
+// OBTENER EMPRESA POR ID
+// ───────────────────────────────────────────────────────
+ 
+/**
+ * Obtiene una empresa por su ID
+ *
+ * @param empresaId - ID de la empresa
+ * @returns Datos de la empresa o null
+ *
+ * @example
+ * const empresa = await obtenerEmpresaPorId(1);
+ * if (empresa) {
+ *   console.log(empresa.razon_social);
+ * }
+ */
+export async function obtenerEmpresaPorId(
+  empresaId: number
+): Promise<Empresa | null> {
+  try {
+    const { data, error } = await supabase
+      .from('empresas')
+      .select('*')
+      .eq('id', empresaId)
+      .single();
+ 
+    if (error) {
+      console.error('❌ Error obteniendo empresa:', error.message);
+      return null;
+    }
+ 
+    return data;
+  } catch (error) {
+    console.error('❌ Error en obtenerEmpresaPorId:', error);
+    return null;
+  }
+}
+ 
+// ───────────────────────────────────────────────────────
+// LISTAR TODAS LAS EMPRESAS
+// ───────────────────────────────────────────────────────
+ 
+/**
+ * Obtiene todas las empresas activas
+ *
+ * @returns Array de empresas
+ *
+ * @example
+ * const empresas = await listarEmpresas();
+ * console.log(`Total: ${empresas.length} empresas`);
+ */
+export async function listarEmpresas(): Promise<Empresa[]> {
+  try {
+    const { data, error } = await supabase
+      .from('empresas')
+      .select('*')
+      .eq('activo', true)
+      .order('razon_social', { ascending: true });
+ 
+    if (error) {
+      console.error('❌ Error listando empresas:', error.message);
+      return [];
+    }
+ 
+    return data || [];
+  } catch (error) {
+    console.error('❌ Error en listarEmpresas:', error);
+    return [];
+  }
+}
+ 
+// ───────────────────────────────────────────────────────
+// ACTUALIZAR EMPRESA
+// ───────────────────────────────────────────────────────
+ 
+/**
+ * Actualiza los datos de una empresa
+ *
+ * @param empresaId - ID de la empresa
+ * @param datos - Datos a actualizar
+ * @returns true si se actualizó correctamente
+ *
+ * @example
+ * const actualizado = await actualizarEmpresa(1, {
+ *   razon_social: 'Nuevo nombre'
+ * });
+ */
+export async function actualizarEmpresa(
+  empresaId: number,
+  datos: { razon_social?: string; activo?: boolean }
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('empresas')
+      .update(datos)
+      .eq('id', empresaId);
+ 
+    if (error) {
+      console.error('❌ Error actualizando empresa:', error.message);
+      return false;
+    }
+ 
+    console.log('✅ Empresa actualizada');
+    return true;
+  } catch (error) {
+    console.error('❌ Error en actualizarEmpresa:', error);
+    return false;
+  }
+}
+ 
+// ───────────────────────────────────────────────────────
+// VERIFICAR SI EXISTE RUC
+// ───────────────────────────────────────────────────────
+ 
+/**
+ * Verifica si ya existe una empresa con el RUC dado
+ *
+ * @param ruc - RUC a verificar
+ * @returns true si existe
+ *
+ * @example
+ * const existe = await verificarRUCExiste('20123456789');
+ * if (existe) {
+ *   alert('RUC duplicado');
+ * }
+ */
+export async function verificarRUCExiste(ruc: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('empresas')
+      .select('id')
+      .eq('ruc', ruc)
+      .maybeSingle();
+ 
+    if (error) {
+      console.error('❌ Error verificando RUC:', error.message);
+      return false;
+    }
+ 
+    return data !== null;
+  } catch (error) {
+    console.error('❌ Error en verificarRUCExiste:', error);
+    return false;
+  }
+}
+ 
+// ───────────────────────────────────────────────────────
+// DESACTIVAR EMPRESA
+// ───────────────────────────────────────────────────────
+ 
+/**
+ * Desactiva una empresa (soft delete)
+ *
+ * @param empresaId - ID de la empresa
+ * @returns true si se desactivó correctamente
+ *
+ * @example
+ * const desactivada = await desactivarEmpresa(1);
+ */
+export async function desactivarEmpresa(empresaId: number): Promise<boolean> {
+  return actualizarEmpresa(empresaId, { activo: false });
+}
