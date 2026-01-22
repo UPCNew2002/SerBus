@@ -146,29 +146,80 @@ export async function busesNecesitanMantenimiento(
   empresaId: number
 ): Promise<BusNecesitaMantenimiento[]> {
   try {
-    console.log('🔧 Consultando buses_necesitan_mantenimiento para empresa_id:', empresaId);
+    console.log('🔧 Consultando buses que necesitan mantenimiento para empresa_id:', empresaId);
 
-    const { data, error } = await supabase.rpc('buses_necesitan_mantenimiento', {
-      p_empresa_id: empresaId,
-    });
+    // Obtener todos los buses de la empresa
+    const { data: buses, error: busesError } = await supabase
+      .from('buses')
+      .select('*')
+      .eq('empresa_id', empresaId)
+      .eq('activo', true);
 
-    console.log('🔧 Respuesta de RPC buses_necesitan_mantenimiento:');
-    console.log('🔧 Data:', data);
-    console.log('🔧 Error:', error);
-
-    if (error) {
-      console.error('❌ Error obteniendo buses:', error.message);
-      console.error('❌ Error code:', error.code);
-      console.error('❌ Error hint:', error.hint);
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
-
-      // Si la función no existe o tiene problemas de estructura, retornar array vacío
-      console.warn('⚠️ Función RPC tiene problemas. Retornando array vacío para no bloquear la app.');
+    if (busesError) {
+      console.error('❌ Error obteniendo buses:', busesError.message);
       return [];
     }
 
-    console.log(`✅ ${data?.length || 0} buses necesitan mantenimiento`);
-    return data || [];
+    if (!buses || buses.length === 0) {
+      console.log('⚠️ No hay buses para esta empresa');
+      return [];
+    }
+
+    console.log(`📋 ${buses.length} buses encontrados, analizando mantenimientos...`);
+
+    // Para cada bus, calcular si necesita mantenimiento
+    const busesConMantenimiento: BusNecesitaMantenimiento[] = [];
+
+    for (const bus of buses) {
+      // Obtener el último mantenimiento del bus
+      const { data: ultimoMant, error: mantError } = await supabase
+        .from('ots')
+        .select('kilometraje_fin')
+        .eq('bus_id', bus.id)
+        .eq('estado', 'completado')
+        .order('fecha_fin', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Si hay error, continuar con el siguiente bus
+      if (mantError) {
+        console.warn(`⚠️ Error obteniendo mantenimiento del bus ${bus.placa}:`, mantError.message);
+        continue;
+      }
+
+      // Calcular km desde último mantenimiento
+      const kmUltimoMant = ultimoMant?.kilometraje_fin || 0;
+      const kmProximoMant = kmUltimoMant + 5000; // Cada 5000 km
+      const kmRestantes = kmProximoMant - bus.kilometraje_actual;
+
+      // Determinar urgencia
+      let urgencia: 'URGENTE' | 'PRÓXIMO' | 'NORMAL' = 'NORMAL';
+      if (kmRestantes <= 0) {
+        urgencia = 'URGENTE';
+      } else if (kmRestantes <= 500) {
+        urgencia = 'PRÓXIMO';
+      }
+
+      // Si necesita mantenimiento pronto (menos de 1000 km), agregarlo a la lista
+      if (kmRestantes <= 1000) {
+        busesConMantenimiento.push({
+          id: bus.id,
+          placa: bus.placa,
+          vin: bus.vin,
+          marca: bus.marca,
+          modelo: bus.modelo,
+          anio: bus.anio,
+          kilometraje_actual: bus.kilometraje_actual,
+          km_proximo_mantenimiento: kmProximoMant,
+          km_restantes: kmRestantes,
+          urgencia: urgencia,
+          proximo_trabajo: 'Mantenimiento preventivo',
+        });
+      }
+    }
+
+    console.log(`✅ ${busesConMantenimiento.length} buses necesitan mantenimiento pronto`);
+    return busesConMantenimiento;
   } catch (error: any) {
     console.error('❌ Error en busesNecesitanMantenimiento:', error);
     console.error('❌ Error message:', error.message);
