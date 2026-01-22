@@ -1,15 +1,15 @@
 -- ═══════════════════════════════════════════════════════
--- FIX: Recrear función buses_necesitan_mantenimiento
+-- FIX FINAL: función buses_necesitan_mantenimiento
 -- ═══════════════════════════════════════════════════════
 
 -- Eliminar todas las versiones de la función
 DROP FUNCTION IF EXISTS buses_necesitan_mantenimiento(INTEGER);
 DROP FUNCTION IF EXISTS buses_necesitan_mantenimiento;
 
--- Crear función con estructura correcta que coincida con TypeScript
+-- Crear función con estructura correcta (id en lugar de bus_id)
 CREATE OR REPLACE FUNCTION buses_necesitan_mantenimiento(p_empresa_id INTEGER)
 RETURNS TABLE(
-  bus_id INTEGER,
+  id INTEGER,
   placa VARCHAR,
   vin VARCHAR,
   marca VARCHAR,
@@ -28,7 +28,7 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT
-    b.id AS bus_id,
+    b.id,
     b.placa,
     b.vin,
     b.marca,

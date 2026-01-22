@@ -35,14 +35,17 @@ export interface ProximoMantenimiento {
 }
 
 export interface BusNecesitaMantenimiento {
-  bus_id: number;
+  id: number;
   placa: string;
+  vin: string;
   marca: string;
   modelo: string;
+  anio: number;
   kilometraje_actual: number;
   km_proximo_mantenimiento: number;
   km_restantes: number;
-  urgencia: 'URGENTE' | 'PRONTO' | 'NORMAL';
+  urgencia: 'URGENTE' | 'PRÓXIMO' | 'NORMAL';
+  proximo_trabajo: string;
 }
 
 export interface EstadisticasOTs {
