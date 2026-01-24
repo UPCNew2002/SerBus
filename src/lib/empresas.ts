@@ -48,7 +48,7 @@ export interface ResultadoCrearEmpresa {
  * Crea una nueva empresa junto con su usuario administrador
  *
  * Proceso:
- * 1. Crea el usuario admin en Supabase Auth
+ * 1. Crea el usuario admin en Supabase Auth (signUp)
  * 2. Crea la empresa en la tabla empresas
  * 3. Crea el perfil del admin vinculado a la empresa
  *
@@ -79,20 +79,25 @@ export async function crearEmpresaConAdmin(
       };
     }
  
-    // 2. Crear usuario admin en Supabase Auth
+    // 2. Crear usuario admin en Supabase Auth (usando signUp)
     const emailAdmin = `${params.adminUsuario}@gmail.com`;
  
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: emailAdmin,
       password: params.adminPassword,
-      email_confirm: true, // Auto-confirmar email
+      options: {
+        data: {
+          username: params.adminUsuario,
+          nombre: params.adminNombre
+        }
+      }
     });
  
-    if (authError) {
-      console.error('❌ Error creando usuario admin:', authError.message);
+    if (authError || !authData.user) {
+      console.error('❌ Error creando usuario admin:', authError?.message);
       return {
         success: false,
-        error: `Error al crear usuario: ${authError.message}`
+        error: `Error al crear usuario: ${authError?.message || 'Usuario no creado'}`
       };
     }
  
@@ -111,9 +116,7 @@ export async function crearEmpresaConAdmin(
  
     if (empresaError) {
       console.error('❌ Error creando empresa:', empresaError.message);
- 
-      // Rollback: eliminar el usuario de auth
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      console.warn('⚠️ No se puede hacer rollback de auth con ANON_KEY');
  
       return {
         success: false,
@@ -140,9 +143,9 @@ export async function crearEmpresaConAdmin(
     if (perfilError) {
       console.error('❌ Error creando perfil:', perfilError.message);
  
-      // Rollback: eliminar empresa y usuario
+      // Rollback: eliminar empresa
       await supabase.from('empresas').delete().eq('id', empresa.id);
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      console.warn('⚠️ No se puede hacer rollback de auth con ANON_KEY');
  
       return {
         success: false,

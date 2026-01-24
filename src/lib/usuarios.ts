@@ -50,7 +50,7 @@ export interface ResultadoCrearUsuario {
  *
  * Proceso:
  * 1. Verifica que el username no exista
- * 2. Crea el usuario en Supabase Auth
+ * 2. Crea el usuario en Supabase Auth (signUp)
  * 3. Crea el perfil del trabajador vinculado a la empresa
  *
  * @param params - Datos del trabajador
@@ -79,20 +79,25 @@ export async function crearTrabajador(
       };
     }
  
-    // 2. Crear usuario en Supabase Auth
+    // 2. Crear usuario en Supabase Auth (usando signUp)
     const emailTrabajador = `${params.username}@gmail.com`;
  
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: emailTrabajador,
       password: params.password,
-      email_confirm: true, // Auto-confirmar email
+      options: {
+        data: {
+          username: params.username,
+          nombre: params.nombre
+        }
+      }
     });
  
-    if (authError) {
-      console.error('❌ Error creando usuario trabajador:', authError.message);
+    if (authError || !authData.user) {
+      console.error('❌ Error creando usuario trabajador:', authError?.message);
       return {
         success: false,
-        error: `Error al crear usuario: ${authError.message}`
+        error: `Error al crear usuario: ${authError?.message || 'Usuario no creado'}`
       };
     }
  
@@ -114,9 +119,7 @@ export async function crearTrabajador(
  
     if (perfilError) {
       console.error('❌ Error creando perfil:', perfilError.message);
- 
-      // Rollback: eliminar usuario de auth
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      console.warn('⚠️ No se puede hacer rollback de auth con ANON_KEY');
  
       return {
         success: false,
@@ -337,21 +340,19 @@ export async function eliminarUsuario(userId: string): Promise<boolean> {
 // ───────────────────────────────────────────────────────
  
 /**
- * Cambia la contraseña de un usuario (requiere ser admin de Supabase)
+ * Cambia la contraseña de un usuario (solo desde el cliente logueado)
  *
- * @param userId - ID del usuario
  * @param nuevaPassword - Nueva contraseña
  * @returns true si se cambió correctamente
  *
  * @example
- * const cambiado = await cambiarPassword('uuid', 'NuevaPass123!');
+ * const cambiado = await cambiarPassword('NuevaPass123!');
  */
 export async function cambiarPassword(
-  userId: string,
   nuevaPassword: string
 ): Promise<boolean> {
   try {
-    const { error } = await supabase.auth.admin.updateUserById(userId, {
+    const { error } = await supabase.auth.updateUser({
       password: nuevaPassword
     });
  
