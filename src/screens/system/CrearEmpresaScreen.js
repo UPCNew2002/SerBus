@@ -15,17 +15,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
-import useEmpresasStore from '../../store/empresasStore';
-
+import { crearEmpresaConAdmin } from '../../lib/empresas';
+ 
 export default function CrearEmpresaScreen({ navigation }) {
   const [ruc, setRuc] = useState('');
   const [razonSocial, setRazonSocial] = useState('');
+  const [adminNombre, setAdminNombre] = useState('');
   const [adminUsuario, setAdminUsuario] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const { agregarEmpresa, existeRUC } = useEmpresasStore();
 
   const validarRUC = (text) => {
     // Solo números y máximo 11 dígitos
@@ -37,61 +36,71 @@ export default function CrearEmpresaScreen({ navigation }) {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
   };
-
-  const handleGuardar = () => {
+const handleGuardar = async () => {
     // Validaciones
     if (!ruc.trim()) {
       Alert.alert('Error', 'El RUC es obligatorio');
       return;
     }
-
+ 
     if (ruc.length !== 11) {
       Alert.alert('Error', 'El RUC debe tener 11 dígitos');
       return;
     }
-
-    if (existeRUC(ruc)) {
-      Alert.alert('Error', 'Ya existe una empresa con ese RUC');
-      return;
-    }
-
+ 
     if (!razonSocial.trim()) {
       Alert.alert('Error', 'La Razón Social es obligatoria');
       return;
     }
-
-    if (!adminUsuario.trim()) {
-      Alert.alert('Error', 'El User del Admin es obligatorio');
+ 
+    if (!adminNombre.trim()) {
+      Alert.alert('Error', 'El Nombre del Admin es obligatorio');
       return;
     }
-
+ 
+    if (!adminUsuario.trim()) {
+      Alert.alert('Error', 'El Usuario del Admin es obligatorio');
+      return;
+    }
+ 
     if (!adminPassword.trim()) {
       Alert.alert('Error', 'La Contraseña es obligatoria');
       return;
     }
-
+ 
     if (adminPassword.length < 6) {
       Alert.alert('Error', 'La Contraseña debe tener al menos 6 caracteres');
       return;
     }
-
-    // Guardar
+ 
+    // Crear empresa con admin en Supabase
     setLoading(true);
-    setTimeout(() => {
-      const nuevaEmpresa = agregarEmpresa({
-  ruc,
-  razonSocial,
-  adminUsuario,
-  adminPassword,
-});
-
+    try {
+      const resultado = await crearEmpresaConAdmin({
+        ruc: ruc.trim(),
+        razonSocial: razonSocial.trim(),
+        adminNombre: adminNombre.trim(),
+        adminUsuario: adminUsuario.trim().toLowerCase(),
+        adminPassword: adminPassword
+      });
+ 
       setLoading(false);
-      Alert.alert(
-  'Éxito',
-  `Empresa creada correctamente\n\nUsuario: ${adminUsuario}\nPassword: ${adminPassword}`,
-  [{ text: 'OK', onPress: () => navigation.goBack() }]
-);
-    }, 1000);
+ 
+      if (resultado.success) {
+        Alert.alert(
+          'Éxito',
+          `Empresa creada correctamente en Supabase\n\nEmpresa: ${resultado.empresa.razon_social}\nRUC: ${resultado.empresa.ruc}\n\nUsuario: ${adminUsuario}\nPassword: ${adminPassword}`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert('Error', resultado.error || 'No se pudo crear la empresa');
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Error en handleGuardar:', error);
+      Alert.alert('Error', 'Ocurrió un error al crear la empresa');
+    }
+
   };
 
   return (
@@ -159,6 +168,24 @@ export default function CrearEmpresaScreen({ navigation }) {
         {/* Sección: Admin Inicial */}
         <Text style={styles.sectionTitle}>ADMINISTRADOR INICIAL</Text>
 
+        <View style={styles.inputGroup}>
+                  <Text style={styles.label}>NOMBRE COMPLETO *</Text>
+          <View style={styles.inputContainer}>
+            <View style={styles.inputIconBox}>
+              <Ionicons name="person-circle" size={20} color={COLORS.text} />
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Ej: Juan Pérez"
+              placeholderTextColor={COLORS.textMuted}
+              value={adminNombre}
+              onChangeText={setAdminNombre}
+              autoCapitalize="words"
+            />
+          </View>
+          <Text style={styles.helperText}>Nombre completo del administrador</Text>
+        </View>
+ 
         <View style={styles.inputGroup}>
   <Text style={styles.label}>USUARIO DEL ADMIN *</Text>
   <View style={styles.inputContainer}>
