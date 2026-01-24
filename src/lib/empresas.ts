@@ -19,7 +19,7 @@ import { supabase } from './supabase';
 export interface Empresa {
   id: number;
   ruc: string;
-  razon_social: string;
+  nombre: string;  // ← Cambié razon_social por nombre
   activo: boolean;
   created_at: string;
   updated_at: string;
@@ -27,7 +27,7 @@ export interface Empresa {
  
 export interface CrearEmpresaParams {
   ruc: string;
-  razonSocial: string;
+  razonSocial: string;  // ← Mantiene razonSocial en el frontend
   adminNombre: string;
   adminUsuario: string;
   adminPassword: string;
@@ -103,12 +103,12 @@ export async function crearEmpresaConAdmin(
  
     console.log('✅ Usuario admin creado:', authData.user.id);
  
-    // 3. Crear empresa en la tabla
+    // 3. Crear empresa en la tabla (usando "nombre" en lugar de "razon_social")
     const { data: empresa, error: empresaError } = await supabase
       .from('empresas')
       .insert({
         ruc: params.ruc,
-        razon_social: params.razonSocial,
+        nombre: params.razonSocial,  // ← Mapeo razonSocial → nombre
         activo: true
       })
       .select()
@@ -183,7 +183,7 @@ export async function crearEmpresaConAdmin(
  * @example
  * const empresa = await obtenerEmpresaPorId(1);
  * if (empresa) {
- *   console.log(empresa.razon_social);
+ *   console.log(empresa.nombre);
  * }
  */
 export async function obtenerEmpresaPorId(
@@ -227,7 +227,7 @@ export async function listarEmpresas(): Promise<Empresa[]> {
       .from('empresas')
       .select('*')
       .eq('activo', true)
-      .order('razon_social', { ascending: true });
+      .order('nombre', { ascending: true });  // ← Cambié razon_social por nombre
  
     if (error) {
       console.error('❌ Error listando empresas:', error.message);
@@ -254,12 +254,12 @@ export async function listarEmpresas(): Promise<Empresa[]> {
  *
  * @example
  * const actualizado = await actualizarEmpresa(1, {
- *   razon_social: 'Nuevo nombre'
+ *   nombre: 'Nuevo nombre'
  * });
  */
 export async function actualizarEmpresa(
   empresaId: number,
-  datos: { razon_social?: string; activo?: boolean }
+  datos: { nombre?: string; activo?: boolean }  // ← Cambié razon_social por nombre
 ): Promise<boolean> {
   try {
     const { error } = await supabase

@@ -89,8 +89,8 @@ const handleGuardar = async () => {
       if (resultado.success) {
         Alert.alert(
           'Éxito',
-          `Empresa creada correctamente en Supabase\n\nEmpresa: ${resultado.empresa.razon_social}\nRUC: ${resultado.empresa.ruc}\n\nUsuario: ${adminUsuario}\nPassword: ${adminPassword}`,
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
+         `Empresa creada correctamente en Supabase\n\nEmpresa: ${resultado.empresa.nombre}\nRUC: ${resultado.empresa.ruc}\n\nUsuario: ${adminUsuario}\nPassword: ${adminPassword}`,
+         [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       } else {
         Alert.alert('Error', resultado.error || 'No se pudo crear la empresa');

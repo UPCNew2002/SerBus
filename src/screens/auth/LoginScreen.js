@@ -72,7 +72,7 @@ export default function LoginScreen() {
         if (empresa) {
           empresaData = {
             id: empresa.id,
-            nombre: empresa.razon_social,
+            nombre: empresa.nombre, 
             ruc: empresa.ruc,
           };
           console.log('✅ Empresa obtenida:', empresaData);
