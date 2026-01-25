@@ -121,14 +121,15 @@ export default function CambiarPasswordScreen({ navigation, route }) {
 
       Alert.alert(
         '✅ Contraseña Actualizada',
-        'Tu contraseña ha sido cambiada exitosamente.',
+        'Tu contraseña ha sido cambiada exitosamente. Por favor, vuelve a iniciar sesión.',
         [
           {
             text: 'OK',
             onPress: () => {
               if (primerLogin) {
-                // Si es primer login, reemplazar la pantalla actual
-                navigation.replace('AuthStack');
+                // Si es primer login, cerrar sesión para que vuelva al login
+                const { logout } = useAuthStore.getState();
+                logout();
               } else {
                 // Si es cambio manual, volver atrás
                 navigation.goBack();
