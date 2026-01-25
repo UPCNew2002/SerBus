@@ -1,6 +1,6 @@
 // src/screens/system/EditarEmpresaScreen.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,28 +9,60 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
-import useEmpresasStore from '../../store/empresasStore';
+import { obtenerEmpresaPorId, actualizarDatosEmpresa } from '../../lib/empresas';
+import { supabase } from '../../lib/supabase';
 
 export default function EditarEmpresaScreen({ route, navigation }) {
   const { empresaId } = route.params;
-  const { obtenerEmpresa, editarEmpresa, existeRUC } = useEmpresasStore();
-  
-  const empresa = obtenerEmpresa(empresaId);
 
-  const [ruc, setRuc] = useState(empresa?.ruc || '');
-  const [razonSocial, setRazonSocial] = useState(empresa?.razonSocial || '');
+  const [cargando, setCargando] = useState(true);
+  const [empresa, setEmpresa] = useState(null);
+  const [ruc, setRuc] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [adminUsuario, setAdminUsuario] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    cargarEmpresa();
+  }, []);
+
+  const cargarEmpresa = async () => {
+    setCargando(true);
+
+    // Obtener datos de la empresa
+    const empresaData = await obtenerEmpresaPorId(empresaId);
+
+    if (!empresaData) {
+      setCargando(false);
+      return;
+    }
+
+    // Obtener usuario admin de la empresa
+    const { data: admin } = await supabase
+      .from('perfiles')
+      .select('username')
+      .eq('empresa_id', empresaId)
+      .eq('rol', 'admin')
+      .single();
+
+    setEmpresa(empresaData);
+    setRuc(empresaData.ruc);
+    setNombre(empresaData.nombre);
+    setAdminUsuario(admin?.username || 'Sin admin');
+    setCargando(false);
+  };
 
   const validarRUC = (text) => {
     const cleaned = text.replace(/[^0-9]/g, '');
     return cleaned.substring(0, 11);
   };
 
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     if (!ruc.trim()) {
       Alert.alert('Error', 'El RUC es obligatorio');
       return;
@@ -41,30 +73,48 @@ export default function EditarEmpresaScreen({ route, navigation }) {
       return;
     }
 
-    if (existeRUC(ruc, empresaId)) {
-      Alert.alert('Error', 'Ya existe otra empresa con ese RUC');
-      return;
-    }
-
-    if (!razonSocial.trim()) {
-      Alert.alert('Error', 'La Razón Social es obligatoria');
+    if (!nombre.trim()) {
+      Alert.alert('Error', 'El nombre de la empresa es obligatorio');
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      editarEmpresa(empresaId, { ruc, razonSocial });
-      setLoading(false);
+
+    const resultado = await actualizarDatosEmpresa(empresaId, {
+      ruc: ruc.trim(),
+      nombre: nombre.trim(),
+    });
+
+    setLoading(false);
+
+    if (resultado.success) {
       Alert.alert('Éxito', 'Empresa actualizada correctamente', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
-    }, 1000);
+    } else {
+      Alert.alert('Error', resultado.error || 'No se pudo actualizar la empresa');
+    }
   };
+
+  if (cargando) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Cargando empresa...</Text>
+      </View>
+    );
+  }
 
   if (!empresa) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Empresa no encontrada</Text>
+        <TouchableOpacity
+          style={styles.backToListButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backToListText}>Volver</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -97,7 +147,7 @@ export default function EditarEmpresaScreen({ route, navigation }) {
           <Ionicons name="person" size={20} color={COLORS.textLight} />
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>USUARIO ADMIN (no editable)</Text>
-            <Text style={styles.infoValue}>@{empresa.adminUsuario}</Text>
+            <Text style={styles.infoValue}>@{adminUsuario}</Text>
           </View>
         </View>
 
@@ -122,19 +172,19 @@ export default function EditarEmpresaScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Razón Social */}
+        {/* Nombre de la Empresa */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>RAZÓN SOCIAL *</Text>
+          <Text style={styles.label}>NOMBRE DE LA EMPRESA *</Text>
           <View style={styles.inputContainer}>
             <View style={styles.inputIconBox}>
               <Ionicons name="business" size={20} color={COLORS.text} />
             </View>
             <TextInput
               style={styles.input}
-              placeholder="Razón Social"
+              placeholder="Nombre de la empresa"
               placeholderTextColor={COLORS.textMuted}
-              value={razonSocial}
-              onChangeText={setRazonSocial}
+              value={nombre}
+              onChangeText={setNombre}
               autoCapitalize="words"
             />
           </View>
@@ -297,5 +347,28 @@ const styles = StyleSheet.create({
     color: COLORS.statusDanger,
     textAlign: 'center',
     marginTop: 50,
+    fontSize: 16,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: COLORS.textMuted,
+    marginTop: 15,
+    fontSize: 14,
+  },
+  backToListButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  backToListText: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
