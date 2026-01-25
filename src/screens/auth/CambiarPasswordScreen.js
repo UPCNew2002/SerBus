@@ -134,11 +134,19 @@ export default function CambiarPasswordScreen({ navigation, route }) {
 
         setLoading(false);
 
-        // Mostrar mensaje después de cerrar sesión
-        Alert.alert(
-          '✅ Contraseña Actualizada',
-          'Tu contraseña ha sido cambiada exitosamente. Por favor, vuelve a iniciar sesión con tu nueva contraseña.'
-        );
+        // Forzar reset de navegación al LoginScreen
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
+
+        // Mostrar mensaje después de resetear navegación
+        setTimeout(() => {
+          Alert.alert(
+            '✅ Contraseña Actualizada',
+            'Tu contraseña ha sido cambiada exitosamente. Por favor, vuelve a iniciar sesión con tu nueva contraseña.'
+          );
+        }, 500);
       } else {
         setLoading(false);
 
