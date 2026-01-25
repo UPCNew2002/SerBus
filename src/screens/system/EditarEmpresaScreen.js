@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
 import { obtenerEmpresaPorId, actualizarDatosEmpresa } from '../../lib/empresas';
+import { crearAdmin } from '../../lib/usuarios';
 import { supabase } from '../../lib/supabase';
  
 export default function EditarEmpresaScreen({ route, navigation }) {
@@ -26,6 +27,14 @@ export default function EditarEmpresaScreen({ route, navigation }) {
   const [nombre, setNombre] = useState('');
   const [adminUsuario, setAdminUsuario] = useState('');
   const [loading, setLoading] = useState(false);
+
+    // Estados para crear admin adicional
+  const [mostrarFormAdmin, setMostrarFormAdmin] = useState(false);
+  const [adminNombre, setAdminNombre] = useState('');
+  const [adminNuevoUsuario, setAdminNuevoUsuario] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [loadingAdmin, setLoadingAdmin] = useState(false);
+
  
   useEffect(() => {
     cargarEmpresa();
@@ -95,6 +104,60 @@ export default function EditarEmpresaScreen({ route, navigation }) {
     }
   };
  
+    const handleCrearAdmin = async () => {
+    if (!adminNombre.trim()) {
+      Alert.alert('Error', 'El nombre del admin es obligatorio');
+      return;
+    }
+ 
+    if (!adminNuevoUsuario.trim()) {
+      Alert.alert('Error', 'El usuario del admin es obligatorio');
+      return;
+    }
+ 
+    if (!adminPassword.trim()) {
+      Alert.alert('Error', 'La contraseña es obligatoria');
+      return;
+    }
+ 
+    if (adminPassword.length < 6) {
+      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+ 
+    setLoadingAdmin(true);
+ 
+    const resultado = await crearAdmin({
+      nombre: adminNombre.trim(),
+      username: adminNuevoUsuario.trim().toLowerCase(),
+      password: adminPassword,
+      empresaId: empresaId,
+    });
+ 
+    setLoadingAdmin(false);
+ 
+    if (resultado.success) {
+      Alert.alert(
+        '✅ Admin Creado',
+        `Admin creado exitosamente:\n\nUsuario: ${adminNuevoUsuario}\nContraseña temporal: ${adminPassword}\n\nEn el primer inicio de sesión deberá cambiar su contraseña.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Limpiar formulario
+              setAdminNombre('');
+              setAdminNuevoUsuario('');
+              setAdminPassword('');
+              setMostrarFormAdmin(false);
+            },
+          },
+        ]
+      );
+    } else {
+      Alert.alert('Error', resultado.error || 'No se pudo crear el admin');
+    }
+  };
+
   if (cargando) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -204,7 +267,110 @@ export default function EditarEmpresaScreen({ route, navigation }) {
             {loading ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
           </Text>
         </TouchableOpacity>
-
+        {/* Separador */}
+        <View style={styles.separador}>
+          <View style={styles.separadorLinea} />
+          <Text style={styles.separadorTexto}>ADMINISTRADORES</Text>
+          <View style={styles.separadorLinea} />
+        </View>
+ 
+        {/* Botón para mostrar/ocultar formulario de admin */}
+        <TouchableOpacity
+          style={styles.toggleFormButton}
+          onPress={() => setMostrarFormAdmin(!mostrarFormAdmin)}
+        >
+          <Ionicons
+            name={mostrarFormAdmin ? 'chevron-up-circle' : 'person-add'}
+            size={20}
+            color={COLORS.accent}
+          />
+          <Text style={styles.toggleFormText}>
+            {mostrarFormAdmin ? 'Ocultar Formulario' : 'Crear Admin Adicional'}
+          </Text>
+        </TouchableOpacity>
+ 
+        {/* Formulario de crear admin adicional */}
+        {mostrarFormAdmin && (
+          <>
+            <View style={styles.adminFormBox}>
+              <Ionicons name="information-circle" size={20} color={COLORS.statusOk} />
+              <Text style={styles.adminFormInfo}>
+                El nuevo admin recibirá una contraseña temporal y deberá cambiarla en su primer inicio de sesión.
+              </Text>
+            </View>
+ 
+            {/* Nombre del Admin */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>NOMBRE COMPLETO *</Text>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIconBox}>
+                  <Ionicons name="person" size={20} color={COLORS.text} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ej: Carlos Ruiz"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={adminNombre}
+                  onChangeText={setAdminNombre}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+ 
+            {/* Usuario del Admin */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>NOMBRE DE USUARIO *</Text>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIconBox}>
+                  <Ionicons name="at" size={20} color={COLORS.text} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ej: cruiz"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={adminNuevoUsuario}
+                  onChangeText={(text) => setAdminNuevoUsuario(text.toLowerCase())}
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+ 
+            {/* Contraseña Temporal */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>CONTRASEÑA TEMPORAL *</Text>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIconBox}>
+                  <Ionicons name="key" size={20} color={COLORS.text} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mínimo 6 caracteres"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={adminPassword}
+                  onChangeText={setAdminPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+ 
+            {/* Botón Crear Admin */}
+            <TouchableOpacity
+              style={[styles.crearAdminButton, loadingAdmin && styles.guardarButtonDisabled]}
+              onPress={handleCrearAdmin}
+              disabled={loadingAdmin}
+            >
+              <Ionicons
+                name={loadingAdmin ? 'hourglass' : 'person-add'}
+                size={24}
+                color={COLORS.text}
+              />
+              <Text style={styles.guardarButtonText}>
+                {loadingAdmin ? 'CREANDO...' : 'CREAR ADMIN'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -369,5 +535,69 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 14,
     fontWeight: '600',
+  },
+  separador: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 30,
+    gap: 15,
+  },
+  separadorLinea: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  separadorTexto: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: COLORS.textMuted,
+    letterSpacing: 1.5,
+  },
+  toggleFormButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.backgroundLight,
+    padding: 14,
+    borderRadius: 10,
+    gap: 10,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    marginBottom: 20,
+  },
+  toggleFormText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.accent,
+  },
+  adminFormBox: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.card,
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.statusOk,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  adminFormInfo: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.textLight,
+    lineHeight: 16,
+  },
+  crearAdminButton: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.accent,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    gap: 10,
+    borderWidth: 2,
+    borderColor: COLORS.accentDark || COLORS.accent,
   },
 });
