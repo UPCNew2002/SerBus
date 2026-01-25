@@ -417,11 +417,60 @@ export async function verificarRUCExiste(ruc: string): Promise<boolean> {
     return false;
   }
 }
- 
+
+// ───────────────────────────────────────────────────────
+// ACTUALIZAR DATOS DE EMPRESA
+// ───────────────────────────────────────────────────────
+
+export interface ActualizarEmpresaParams {
+  nombre?: string;
+  ruc?: string;
+}
+
+/**
+ * Actualiza los datos de una empresa (RUC y/o nombre)
+ */
+export async function actualizarDatosEmpresa(
+  empresaId: number,
+  datos: ActualizarEmpresaParams
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Si se está actualizando el RUC, verificar que no esté duplicado
+    if (datos.ruc) {
+      const { data: empresaExistente } = await supabase
+        .from('empresas')
+        .select('id')
+        .eq('ruc', datos.ruc)
+        .neq('id', empresaId)
+        .maybeSingle();
+
+      if (empresaExistente) {
+        return { success: false, error: 'Ya existe otra empresa con ese RUC' };
+      }
+    }
+
+    const { error } = await supabase
+      .from('empresas')
+      .update(datos)
+      .eq('id', empresaId);
+
+    if (error) {
+      console.error('❌ Error actualizando empresa:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Empresa actualizada correctamente');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error en actualizarDatosEmpresa:', error);
+    return { success: false, error: 'Error al actualizar empresa' };
+  }
+}
+
 // ───────────────────────────────────────────────────────
 // DESACTIVAR EMPRESA
 // ───────────────────────────────────────────────────────
- 
+
 /**
  * Desactiva una empresa (soft delete)
  *
