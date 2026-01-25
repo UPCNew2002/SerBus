@@ -117,26 +117,31 @@ export default function CambiarPasswordScreen({ navigation, route }) {
 
       console.log('✅ Contraseña actualizada correctamente');
 
-      setLoading(false);
-
       if (primerLogin) {
-        // Si es primer login, cerrar sesión inmediatamente
+        // Si es primer login, cerrar sesión ANTES de mostrar el alert
+        console.log('🚪 Cerrando sesión...');
+
+        // Cerrar sesión de Supabase primero
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) {
+          console.error('❌ Error en signOut:', signOutError);
+        }
+        console.log('✅ SignOut de Supabase completado');
+
+        // Luego cerrar sesión local
+        logout();
+        console.log('✅ Logout local completado - isAuthenticated debería ser false ahora');
+
+        setLoading(false);
+
+        // Mostrar mensaje después de cerrar sesión
         Alert.alert(
           '✅ Contraseña Actualizada',
-          'Tu contraseña ha sido cambiada exitosamente. Por favor, vuelve a iniciar sesión con tu nueva contraseña.',
-          [
-            {
-              text: 'OK',
-              onPress: async () => {
-                // Cerrar sesión de Supabase primero
-                await supabase.auth.signOut();
-                // Luego cerrar sesión local
-                logout();
-              },
-            },
-          ]
+          'Tu contraseña ha sido cambiada exitosamente. Por favor, vuelve a iniciar sesión con tu nueva contraseña.'
         );
       } else {
+        setLoading(false);
+
         // Si es cambio manual, mostrar mensaje y volver
         Alert.alert(
           '✅ Contraseña Actualizada',
