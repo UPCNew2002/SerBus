@@ -21,7 +21,7 @@ import useAuthStore from '../../store/authStore';
  
 export default function CambiarPasswordScreen({ navigation, route }) {
   const COLORS = useColores();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { primerLogin = false } = route.params || {};
  
   const [passwordActual, setPasswordActual] = useState('');
@@ -119,24 +119,36 @@ export default function CambiarPasswordScreen({ navigation, route }) {
  
       setLoading(false);
  
-      Alert.alert(
-        '✅ Contraseña Actualizada',
-        'Tu contraseña ha sido cambiada exitosamente.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (primerLogin) {
-                // Si es primer login, reemplazar la pantalla actual
-                navigation.replace('AuthStack');
-              } else {
-                // Si es cambio manual, volver atrás
-                navigation.goBack();
-              }
+      if (primerLogin) {
+        // Si es primer login, cerrar sesión inmediatamente
+        Alert.alert(
+          '✅ Contraseña Actualizada',
+          'Tu contraseña ha sido cambiada exitosamente. Por favor, vuelve a iniciar sesión con tu nueva contraseña.',
+          [
+            {
+              text: 'OK',
+              onPress: async () => {
+                // Cerrar sesión de Supabase primero
+                await supabase.auth.signOut();
+                // Luego cerrar sesión local
+                logout();
+              },
             },
-          },
-        ]
-      );
+          ]
+        );
+      } else {
+        // Si es cambio manual, mostrar mensaje y volver
+        Alert.alert(
+          '✅ Contraseña Actualizada',
+          'Tu contraseña ha sido cambiada exitosamente.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      }
     } catch (error) {
       console.error('❌ Error en cambio de contraseña:', error);
       Alert.alert('Error', 'Ocurrió un error inesperado. Intenta nuevamente.');
