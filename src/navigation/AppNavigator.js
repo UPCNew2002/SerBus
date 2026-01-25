@@ -46,7 +46,7 @@ export default function AppNavigator() {
 
   if (!isAuthenticated) {
     return (
-      <NavigationContainer>
+      <NavigationContainer key="not-authenticated">
         <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: false }}>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="CambiarPassword" component={CambiarPasswordScreen} />
@@ -54,11 +54,11 @@ export default function AppNavigator() {
       </NavigationContainer>
     );
   }
-
+ 
   // Navegación según rol
 if (user?.rol === 'super_admin') {
   return (
-    <NavigationContainer>
+    <NavigationContainer key="super-admin">
       <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: false }}>
         <Stack.Screen name="SystemHome" component={SystemHomeScreen} />
         <Stack.Screen name="ListarEmpresas" component={ListarEmpresasScreen} />
@@ -72,10 +72,10 @@ if (user?.rol === 'super_admin') {
     </NavigationContainer>
   );
 }
-
+ 
 if (user?.rol === 'admin') {
   return (
-    <NavigationContainer>
+    <NavigationContainer key="admin">
       <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: false }}>
         <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
         <Stack.Screen name="RegistrarOT" component={RegistrarOTScreen} />
@@ -95,11 +95,11 @@ if (user?.rol === 'admin') {
     </NavigationContainer>
   );
 }
-
+ 
 // Navegación para Trabajador
 if (user?.rol === 'trabajador') {
   return (
-    <NavigationContainer>
+    <NavigationContainer key="trabajador">
       <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: false }}>
         <Stack.Screen name="WorkerHome" component={WorkerHomeScreen} />
         <Stack.Screen name="WorkerOTsList" component={WorkerOTsListScreen} />
