@@ -1,6 +1,6 @@
 // src/screens/system/GestionarAdminsScreen.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,21 +9,34 @@ import {
   FlatList,
   Alert,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColores } from '../../hooks/useColores';
-import useEmpresasStore from '../../store/empresasStore';
+import { obtenerTodasLasEmpresas } from '../../lib/empresas';
 
 export default function GestionarAdminsScreen({ navigation }) {
   const COLORS = useColores();
-  const { empresas, editarEmpresa } = useEmpresasStore();
+  const [empresas, setEmpresas] = useState([]);
+  const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
+
+  useEffect(() => {
+    cargarEmpresas();
+  }, []);
+
+  const cargarEmpresas = async () => {
+    setCargando(true);
+    const datos = await obtenerTodasLasEmpresas();
+    setEmpresas(datos);
+    setCargando(false);
+  };
 
   // Filtrar empresas por búsqueda
   const empresasFiltradas = empresas.filter(
     (e) =>
-      e.razonSocial.toLowerCase().includes(busqueda.toLowerCase()) ||
+      e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       e.adminUsuario.toLowerCase().includes(busqueda.toLowerCase()) ||
       e.ruc.includes(busqueda)
   );
@@ -31,22 +44,8 @@ export default function GestionarAdminsScreen({ navigation }) {
   const handleResetPassword = (empresa) => {
     Alert.alert(
       '🔐 Resetear Contraseña',
-      `¿Resetear la contraseña del admin de "${empresa.razonSocial}"?\n\nUsuario: ${empresa.adminUsuario}\n\nSe generará una contraseña temporal: "reset123"`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Resetear',
-          style: 'destructive',
-          onPress: () => {
-            // Actualizar contraseña
-            editarEmpresa(empresa.id, { adminPassword: 'reset123' });
-            Alert.alert(
-              '✅ Contraseña Reseteada',
-              `Nueva contraseña temporal para ${empresa.adminUsuario}:\n\nContraseña: reset123\n\nInforma al admin que debe cambiarla al iniciar sesión.`
-            );
-          },
-        },
-      ]
+      `Esta funcionalidad requiere actualizar la contraseña en Supabase Auth.\n\nPor ahora, contacta al administrador del sistema para resetear la contraseña del usuario: ${empresa.adminUsuario}`,
+      [{ text: 'Entendido' }]
     );
   };
 
@@ -57,7 +56,7 @@ export default function GestionarAdminsScreen({ navigation }) {
           <Ionicons name="person" size={24} color={COLORS.accent} />
         </View>
         <View style={styles.adminInfo}>
-          <Text style={[styles.empresaNombre, { color: COLORS.text }]}>{item.razonSocial}</Text>
+          <Text style={[styles.empresaNombre, { color: COLORS.text }]}>{item.nombre}</Text>
           <View style={styles.adminDetalles}>
             <Ionicons name="at" size={12} color={COLORS.textMuted} />
             <Text style={[styles.adminUsuario, { color: COLORS.textLight }]}>{item.adminUsuario}</Text>
@@ -155,20 +154,27 @@ export default function GestionarAdminsScreen({ navigation }) {
       </View>
 
       {/* Lista */}
-      <FlatList
-        data={empresasFiltradas}
-        renderItem={renderAdmin}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.lista}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="search-outline" size={60} color={COLORS.textMuted} />
-            <Text style={[styles.emptyText, { color: COLORS.textMuted }]}>
-              No se encontraron admins
-            </Text>
-          </View>
-        }
-      />
+      {cargando ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={[styles.loadingText, { color: COLORS.textMuted }]}>Cargando admins...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={empresasFiltradas}
+          renderItem={renderAdmin}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.lista}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="search-outline" size={60} color={COLORS.textMuted} />
+              <Text style={[styles.emptyText, { color: COLORS.textMuted }]}>
+                No se encontraron admins
+              </Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -275,4 +281,14 @@ const styles = StyleSheet.create({
   viewText: { fontSize: 12, fontWeight: '600' },
   emptyContainer: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 16, marginTop: 15 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 14,
+    marginTop: 15,
+  },
 });
