@@ -21,8 +21,11 @@ import useAuthStore from '../../store/authStore';
  
 export default function CambiarPasswordScreen({ navigation, route }) {
   const COLORS = useColores();
-  const { user, logout } = useAuthStore();
-  const { primerLogin = false } = route.params || {};
+ const { user: userFromStore, logout } = useAuthStore();
+  const { primerLogin = false, userData } = route.params || {};
+ 
+  // Si es primer login, usar userData de los parámetros; si no, usar del store
+  const user = primerLogin ? userData : userFromStore;
  
   const [passwordActual, setPasswordActual] = useState('');
   const [passwordNueva, setPasswordNueva] = useState('');

@@ -69,26 +69,22 @@ export default function LoginScreen() {
       if (perfil.debe_cambiar_password) {
         console.log('🔐 Usuario debe cambiar contraseña - redirigiendo...');
  
-        // Guardar datos temporales para la pantalla de cambio de contraseña
+        // NO hacer login, solo pasar los datos como parámetros
         const userData = {
-          user: {
-            id: perfil.id,
-            nombre: perfil.nombre,
-            rol: perfil.rol,
-            username: perfil.username,
-            activo: perfil.activo,
-            email: session.user.email,
-          },
-          empresa: null,
-          token: session.access_token,
+          id: perfil.id,
+          nombre: perfil.nombre,
+          rol: perfil.rol,
+          username: perfil.username,
+          activo: perfil.activo,
+          email: session.user.email,
         };
  
-        // Hacer login temporal
-        login(userData);
- 
-        // Navegar a cambiar contraseña
+        // Navegar a cambiar contraseña SIN hacer login
         setLoading(false);
-        navigation.navigate('CambiarPassword', { primerLogin: true });
+        navigation.navigate('CambiarPassword', {
+          primerLogin: true,
+          userData: userData
+        });
         return;
       }
  
