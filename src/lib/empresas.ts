@@ -11,7 +11,7 @@
 // ═══════════════════════════════════════════════════════
  
 import { supabase } from './supabase';
- 
+import { verificarUsernameExiste } from './usuarios';
 // ───────────────────────────────────────────────────────
 // TIPOS
 // ───────────────────────────────────────────────────────
@@ -48,9 +48,11 @@ export interface ResultadoCrearEmpresa {
  * Crea una nueva empresa junto con su usuario administrador
  *
  * Proceso:
- * 1. Crea el usuario admin en Supabase Auth (signUp)
- * 2. Crea la empresa en la tabla empresas
- * 3. Crea el perfil del admin vinculado a la empresa
+* 1. Verifica que el RUC no exista
+ * 2. Verifica que el username del admin no exista
+ * 3. Crea el usuario admin en Supabase Auth (signUp)
+ * 4. Crea la empresa en la tabla empresas
+ * 5. Crea el perfil del admin vinculado a la empresa
  *
  * @param params - Datos de la empresa y admin
  * @returns Resultado con empresa y admin creados
@@ -79,7 +81,16 @@ export async function crearEmpresaConAdmin(
       };
     }
  
-    // 2. Crear usuario admin en Supabase Auth (usando signUp)
+    // 2. Verificar que el username del admin no exista
+    const usernameExiste = await verificarUsernameExiste(params.adminUsuario);
+    if (usernameExiste) {
+      return {
+        success: false,
+        error: 'Ya existe un usuario con ese nombre de usuario'
+      };
+    }
+ 
+    // 3. Crear usuario admin en Supabase Auth (usando signUp)
     const emailAdmin = `${params.adminUsuario}@gmail.com`;
  
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -103,7 +114,7 @@ export async function crearEmpresaConAdmin(
  
     console.log('✅ Usuario admin creado:', authData.user.id);
  
-    // 3. Crear empresa en la tabla (usando "nombre" en lugar de "razon_social")
+    // 4. Crear empresa en la tabla (usando "nombre" en lugar de "razon_social")
     const { data: empresa, error: empresaError } = await supabase
       .from('empresas')
       .insert({
@@ -126,7 +137,7 @@ export async function crearEmpresaConAdmin(
  
     console.log('✅ Empresa creada:', empresa.id);
  
-    // 4. Crear perfil del admin vinculado a la empresa
+    // 5. Crear perfil del admin vinculado a la empresa
     const { data: perfil, error: perfilError } = await supabase
       .from('perfiles')
       .insert({

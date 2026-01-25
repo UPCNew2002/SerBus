@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../store/authStore';
 import { useColores } from '../../hooks/useColores';
 import { signIn, getPerfilUsuario } from '../../lib/supabase';
+import { obtenerEmpresaPorId } from '../../lib/empresas';
 
 export default function LoginScreen() {
   const COLORS = useColores();
