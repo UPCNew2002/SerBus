@@ -292,6 +292,108 @@ export async function actualizarEmpresa(
 }
  
 // ───────────────────────────────────────────────────────
+// OBTENER TODAS LAS EMPRESAS (SUPER ADMIN)
+// ───────────────────────────────────────────────────────
+ 
+export interface EmpresaConAdmin {
+  id: number;
+  nombre: string;
+  ruc: string;
+  activo: boolean;
+  created_at: string;
+  adminUsuario: string;
+  adminNombre: string;
+}
+ 
+/**
+ * Obtiene todas las empresas (activas e inactivas) con información del admin
+ * Solo para uso de super_admin
+ */
+export async function obtenerTodasLasEmpresas(): Promise<EmpresaConAdmin[]> {
+  try {
+    // Obtener todas las empresas
+    const { data: empresas, error: errorEmpresas } = await supabase
+      .from('empresas')
+      .select('*')
+      .order('created_at', { ascending: false });
+ 
+    if (errorEmpresas) {
+      console.error('❌ Error obteniendo empresas:', errorEmpresas.message);
+      return [];
+    }
+ 
+    if (!empresas || empresas.length === 0) {
+      return [];
+    }
+ 
+    // Para cada empresa, obtener el perfil del admin
+    const empresasConAdmin: EmpresaConAdmin[] = [];
+ 
+    for (const empresa of empresas) {
+      // Buscar el perfil del admin de esta empresa
+      const { data: admin } = await supabase
+        .from('perfiles')
+        .select('username, nombre')
+        .eq('empresa_id', empresa.id)
+        .eq('rol', 'admin')
+        .single();
+ 
+      empresasConAdmin.push({
+        id: empresa.id,
+        nombre: empresa.nombre,
+        ruc: empresa.ruc,
+        activo: empresa.activo,
+        created_at: empresa.created_at,
+        adminUsuario: admin?.username || 'Sin admin',
+        adminNombre: admin?.nombre || 'Sin nombre',
+      });
+    }
+ 
+    return empresasConAdmin;
+  } catch (error) {
+    console.error('❌ Error en obtenerTodasLasEmpresas:', error);
+    return [];
+  }
+}
+ 
+/**
+ * Cambia el estado activo/inactivo de una empresa
+ */
+export async function cambiarEstadoEmpresa(empresaId: number): Promise<boolean> {
+  try {
+    // Primero obtener el estado actual
+    const { data: empresa } = await supabase
+      .from('empresas')
+      .select('activo')
+      .eq('id', empresaId)
+      .single();
+ 
+    if (!empresa) {
+      return false;
+    }
+ 
+    // Cambiar al estado opuesto
+    const nuevoEstado = !empresa.activo;
+ 
+    const { error } = await supabase
+      .from('empresas')
+      .update({ activo: nuevoEstado })
+      .eq('id', empresaId);
+ 
+    if (error) {
+      console.error('❌ Error cambiando estado:', error.message);
+      return false;
+    }
+ 
+    console.log(`✅ Empresa ${nuevoEstado ? 'activada' : 'desactivada'}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error en cambiarEstadoEmpresa:', error);
+    return false;
+  }
+}
+ 
+// ───────────────────────────────────────────────────────
 // VERIFICAR SI EXISTE RUC
 // ───────────────────────────────────────────────────────
  

@@ -1,6 +1,6 @@
 // src/screens/system/ListarEmpresasScreen.js
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,38 @@ import {
   StyleSheet,
   FlatList,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
-import useEmpresasStore from '../../store/empresasStore';
-
+import { obtenerTodasLasEmpresas, cambiarEstadoEmpresa } from '../../lib/empresas';
+ 
 export default function ListarEmpresasScreen({ navigation }) {
-  const { empresas, cambiarEstadoEmpresa } = useEmpresasStore();
+  const [empresas, setEmpresas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+ 
+  useEffect(() => {
+    cargarEmpresas();
+  }, []);
+ 
+  const cargarEmpresas = async () => {
+    setCargando(true);
+    const datos = await obtenerTodasLasEmpresas();
+    setEmpresas(datos);
+    setCargando(false);
+  };
+ 
+  const handleCambiarEstado = async (empresaId) => {
+    const exito = await cambiarEstadoEmpresa(empresaId);
+    if (exito) {
+      // Recargar la lista
+      cargarEmpresas();
+    } else {
+      Alert.alert('Error', 'No se pudo cambiar el estado de la empresa');
+    }
+  };
 
   const renderEmpresa = ({ item }) => (
     <View style={styles.empresaCard}>
@@ -24,30 +48,30 @@ export default function ListarEmpresasScreen({ navigation }) {
           <Ionicons name="business" size={24} color={COLORS.primary} />
         </View>
         <View style={styles.empresaInfo}>
-          <Text style={styles.empresaNombre}>{item.razonSocial}</Text>
+<Text style={styles.empresaNombre}>{item.nombre}</Text>
           <Text style={styles.empresaRuc}>RUC: {item.ruc}</Text>
           <Text style={styles.empresaFecha}>
-            Creada: {new Date(item.fechaCreacion).toLocaleDateString('es-PE')}
+            Creada: {new Date(item.created_at).toLocaleDateString('es-PE')}
           </Text>
         </View>
         <View
           style={[
             styles.estadoBadge,
-            item.estado === 'activa' ? styles.estadoActiva : styles.estadoInactiva,
+            item.activo ? styles.estadoActiva : styles.estadoInactiva,
           ]}
         >
           <Text style={styles.estadoText}>
-            {item.estado === 'activa' ? 'ACTIVA' : 'INACTIVA'}
+            {item.activo ? 'ACTIVA' : 'INACTIVA'}
           </Text>
         </View>
       </View>
-
+ 
       <View style={styles.empresaFooter}>
   <View style={styles.adminInfo}>
     <Ionicons name="person" size={14} color={COLORS.textMuted} />
     <Text style={styles.adminEmail}>@{item.adminUsuario}</Text>
   </View>
-  
+ 
   <View style={styles.actionsRow}>
     <TouchableOpacity
       style={styles.editButton}
@@ -56,18 +80,18 @@ export default function ListarEmpresasScreen({ navigation }) {
       <Ionicons name="create" size={16} color={COLORS.accent} />
       <Text style={styles.editText}>Editar</Text>
     </TouchableOpacity>
-    
+ 
     <TouchableOpacity
       style={styles.toggleButton}
-      onPress={() => cambiarEstadoEmpresa(item.id)}
+      onPress={() => handleCambiarEstado(item.id)}
     >
       <Ionicons
-        name={item.estado === 'activa' ? 'close-circle' : 'checkmark-circle'}
+        name={item.activo ? 'close-circle' : 'checkmark-circle'}
         size={18}
-        color={item.estado === 'activa' ? COLORS.statusDanger : COLORS.statusOk}
+        color={item.activo ? COLORS.statusDanger : COLORS.statusOk}
       />
       <Text style={styles.toggleText}>
-        {item.estado === 'activa' ? 'Desactivar' : 'Activar'}
+        {item.activo ? 'Desactivar' : 'Activar'}
       </Text>
     </TouchableOpacity>
   </View>
@@ -102,20 +126,27 @@ export default function ListarEmpresasScreen({ navigation }) {
         </View>
         <View style={styles.statBox}>
           <Text style={[styles.statNumber, { color: COLORS.statusOk }]}>
-            {empresas.filter((e) => e.estado === 'activa').length}
+            {empresas.filter((e) => e.activo).length}
           </Text>
           <Text style={styles.statLabel}>Activas</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={[styles.statNumber, { color: COLORS.statusDanger }]}>
-            {empresas.filter((e) => e.estado === 'inactiva').length}
+            {empresas.filter((e) => !e.activo).length}
           </Text>
           <Text style={styles.statLabel}>Inactivas</Text>
         </View>
       </View>
-
-      {/* Lista */}
-      <FlatList
+ 
+      {/* Indicador de carga */}
+      {cargando ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Cargando empresas...</Text>
+        </View>
+      ) : (
+        /* Lista */
+        <FlatList
         data={empresas}
         renderItem={renderEmpresa}
         keyExtractor={(item) => item.id.toString()}
@@ -133,6 +164,7 @@ export default function ListarEmpresasScreen({ navigation }) {
           </View>
         }
       />
+      )}
     </SafeAreaView>
   );
 }
@@ -285,6 +317,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textLight,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    marginTop: 15,
   },
   emptyContainer: {
     alignItems: 'center',
