@@ -13,64 +13,70 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import useUsuariosStore from '../../store/usuariosStore';
+import { crearTrabajador } from '../../lib/usuarios';
 import useAuthStore from '../../store/authStore';
-
+ 
 export default function CrearUsuarioScreen({ navigation }) {
   const [nombre, setNombre] = useState('');
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const { agregarUsuario, existeUsuario } = useUsuariosStore();
   const { empresa } = useAuthStore();
 
-  const handleGuardar = () => {
+ const handleGuardar = async () => {
     // Validaciones
     if (!nombre.trim()) {
       Alert.alert('Error', 'El nombre completo es obligatorio');
       return;
     }
-
+ 
     if (!usuario.trim()) {
       Alert.alert('Error', 'El nombre de usuario es obligatorio');
       return;
     }
-
-    if (existeUsuario(usuario)) {
-      Alert.alert('Error', 'Ya existe un usuario con ese nombre');
-      return;
-    }
-
+ 
     if (!password.trim()) {
       Alert.alert('Error', 'La contraseña es obligatoria');
       return;
     }
-
+ 
     if (password.length < 6) {
       Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
       return;
     }
-
-    // Guardar
+ 
+    if (!empresa?.id) {
+      Alert.alert('Error', 'No se pudo identificar la empresa');
+      return;
+    }
+ 
+    // Crear trabajador en Supabase
     setLoading(true);
-    setTimeout(() => {
-      agregarUsuario({
+    try {
+      const resultado = await crearTrabajador({
         nombre: nombre.trim(),
-        usuario: usuario.trim().toLowerCase(),
-        password: password, // En producción: hash
-        rol: 'trabajador',
-        empresaId: empresa?.id || 1,
+        username: usuario.trim().toLowerCase(),
+        password: password,
+        empresaId: empresa.id
       });
-
+ 
       setLoading(false);
-      Alert.alert(
-        'Éxito',
-        `Usuario "${usuario}" creado correctamente\n\nPuede acceder con:\nUsuario: ${usuario}\nContraseña: ${password}`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
-    }, 1000);
+ 
+      if (resultado.success) {
+        Alert.alert(
+          'Éxito',
+          `Trabajador creado correctamente en Supabase\n\nNombre: ${resultado.usuario.nombre}\nUsuario: ${usuario}\nContraseña: ${password}`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert('Error', resultado.error || 'No se pudo crear el trabajador');
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Error en handleGuardar:', error);
+      Alert.alert('Error', 'Ocurrió un error al crear el trabajador');
+    }
   };
 
   return (

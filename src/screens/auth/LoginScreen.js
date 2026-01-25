@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../store/authStore';
 import { useColores } from '../../hooks/useColores';
 import { signIn, getPerfilUsuario } from '../../lib/supabase';
+import { obtenerEmpresaPorId } from '../../lib/empresas';
 
 export default function LoginScreen() {
   const COLORS = useColores();
@@ -63,13 +64,22 @@ export default function LoginScreen() {
 
       console.log('✅ Perfil obtenido:', perfil);
 
+      // Obtener empresa desde Supabase
       let empresaData = null;
       if (perfil.empresa_id) {
-        empresaData = {
-          id: perfil.empresa_id,
-          nombre: 'Transportes ABC',
-          ruc: '20123456789',
-        };
+        console.log('🏢 Obteniendo empresa desde Supabase...');
+        const empresa = await obtenerEmpresaPorId(perfil.empresa_id);
+ 
+        if (empresa) {
+          empresaData = {
+            id: empresa.id,
+            nombre: empresa.nombre, 
+            ruc: empresa.ruc,
+          };
+          console.log('✅ Empresa obtenida:', empresaData);
+        } else {
+          console.warn('⚠️ No se pudo obtener la empresa');
+        }
       }
 
       const userData = {
