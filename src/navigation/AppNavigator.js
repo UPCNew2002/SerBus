@@ -7,6 +7,7 @@ import useAuthStore from '../store/authStore';
 
 // Auth
 import LoginScreen from '../screens/auth/LoginScreen';
+import CambiarPasswordScreen from '../screens/auth/CambiarPasswordScreen';
 
 // System (Super Admin)
 import SystemHomeScreen from '../screens/system/SystemHomeScreen';
@@ -48,6 +49,7 @@ export default function AppNavigator() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: false }}>
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="CambiarPassword" component={CambiarPasswordScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     );
@@ -65,6 +67,7 @@ if (user?.rol === 'super_admin') {
         <Stack.Screen name="GestionarAdmins" component={GestionarAdminsScreen} />
         <Stack.Screen name="GestionarTrabajadores" component={GestionarTrabajadoresScreen} />
         <Stack.Screen name="LogsSistema" component={LogsSistemaScreen} />
+        <Stack.Screen name="CambiarPassword" component={CambiarPasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -87,6 +90,7 @@ if (user?.rol === 'admin') {
         <Stack.Screen name="CrearUsuario" component={CrearUsuarioScreen} />
         <Stack.Screen name="EditarUsuario" component={EditarUsuarioScreen} />
         <Stack.Screen name="ConfigurarColores" component={ConfigurarColoresScreen} />
+        <Stack.Screen name="CambiarPassword" component={CambiarPasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -101,6 +105,7 @@ if (user?.rol === 'trabajador') {
         <Stack.Screen name="WorkerOTsList" component={WorkerOTsListScreen} />
         <Stack.Screen name="WorkerDetalleOT" component={WorkerDetalleOTScreen} />
         <Stack.Screen name="WorkerCronograma" component={WorkerCronogramaScreen} />
+        <Stack.Screen name="CambiarPassword" component={CambiarPasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

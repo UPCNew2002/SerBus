@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import useAuthStore from '../../store/authStore';
 import { useColores } from '../../hooks/useColores';
 import { signIn, getPerfilUsuario } from '../../lib/supabase';
@@ -19,6 +20,7 @@ import { obtenerEmpresaPorId } from '../../lib/empresas';
 
 export default function LoginScreen() {
   const COLORS = useColores();
+  const navigation = useNavigation();
 
   const gradientBg = [COLORS.background, COLORS.secondary || COLORS.background, COLORS.background];
   const gradientLogo = [COLORS.primary, COLORS.primaryDark];
@@ -64,16 +66,43 @@ export default function LoginScreen() {
 
       console.log('✅ Perfil obtenido:', perfil);
 
+      // Verificar si debe cambiar contraseña
+      if (perfil.debe_cambiar_password) {
+        console.log('🔐 Usuario debe cambiar contraseña - redirigiendo...');
+
+        // Guardar datos temporales para la pantalla de cambio de contraseña
+        const userData = {
+          user: {
+            id: perfil.id,
+            nombre: perfil.nombre,
+            rol: perfil.rol,
+            username: perfil.username,
+            activo: perfil.activo,
+            email: session.user.email,
+          },
+          empresa: null,
+          token: session.access_token,
+        };
+
+        // Hacer login temporal
+        login(userData);
+
+        // Navegar a cambiar contraseña
+        setLoading(false);
+        navigation.navigate('CambiarPassword', { primerLogin: true });
+        return;
+      }
+
       // Obtener empresa desde Supabase
       let empresaData = null;
       if (perfil.empresa_id) {
         console.log('🏢 Obteniendo empresa desde Supabase...');
         const empresa = await obtenerEmpresaPorId(perfil.empresa_id);
- 
+
         if (empresa) {
           empresaData = {
             id: empresa.id,
-            nombre: empresa.nombre, 
+            nombre: empresa.nombre,
             ruc: empresa.ruc,
           };
           console.log('✅ Empresa obtenida:', empresaData);
@@ -89,6 +118,7 @@ export default function LoginScreen() {
           rol: perfil.rol,
           username: perfil.username,
           activo: perfil.activo,
+          email: session.user.email,
         },
         empresa: empresaData,
         token: session.access_token,
