@@ -127,7 +127,10 @@ export default function CambiarPasswordScreen({ navigation, route }) {
           [
             {
               text: 'OK',
-              onPress: () => {
+              onPress: async () => {
+                // Cerrar sesión de Supabase primero
+                await supabase.auth.signOut();
+                // Luego cerrar sesión local
                 logout();
               },
             },
