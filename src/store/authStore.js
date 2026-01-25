@@ -11,6 +11,7 @@ const useAuthStore = create((set) => ({
   empresa: null,
   isAuthenticated: false,
   token: null,
+  logoutCount: 0, // Contador para forzar re-render del AppNavigator
 
   // Función para hacer login
 login: (userData) => {
@@ -20,14 +21,14 @@ login: (userData) => {
     token: userData.token,
     isAuthenticated: true,
   });
-  
+
   // Cargar tema de la empresa
   if (userData.empresa) {
     // Obtener empresa completa del store para tener el tema actualizado
     const empresaCompleta = useEmpresasStore
       .getState()
       .empresas.find((e) => e.id === userData.empresa.id);
-    
+
     if (empresaCompleta?.tema) {
       useTemaStore.getState().cargarTema(empresaCompleta.tema);
     } else {
@@ -40,12 +41,13 @@ login: (userData) => {
 
   // Función para hacer logout
 logout: () => {
-  set({
+  set((state) => ({
     user: null,
     empresa: null,
     token: null,
     isAuthenticated: false,
-  });
+    logoutCount: state.logoutCount + 1, // Incrementar contador para forzar re-render
+  }));
 
   // Resetear tema
   useTemaStore.getState().resetearTema();

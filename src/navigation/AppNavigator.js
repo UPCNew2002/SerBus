@@ -42,11 +42,11 @@ import WorkerCronogramaScreen from '../screens/worker/WorkerCronogramaScreen';
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, logoutCount } = useAuthStore();
 
   if (!isAuthenticated) {
     return (
-      <NavigationContainer key="not-authenticated">
+      <NavigationContainer key={`not-authenticated-${logoutCount}`}>
         <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: false }}>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="CambiarPassword" component={CambiarPasswordScreen} />
