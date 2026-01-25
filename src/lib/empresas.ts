@@ -146,7 +146,8 @@ export async function crearEmpresaConAdmin(
         username: params.adminUsuario,
         rol: 'admin',
         empresa_id: empresa.id,
-        activo: true
+        activo: true,
+        debe_cambiar_password: true 
       })
       .select()
       .single();

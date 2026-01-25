@@ -112,7 +112,8 @@ export async function crearTrabajador(
         username: params.username,
         rol: 'trabajador',
         empresa_id: params.empresaId,
-        activo: true
+        activo: true,
+        debe_cambiar_password: true
       })
       .select()
       .single();
