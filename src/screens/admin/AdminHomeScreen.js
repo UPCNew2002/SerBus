@@ -21,11 +21,9 @@ export default function AdminHomeScreen({ navigation }) {
     
     setLoading(true);
     try {
-      // Obtener estadísticas de OTs
       const stats = await obtenerEstadisticasOTs(empresa.id);
       setEstadisticas(stats);
 
-      // Obtener buses que necesitan mantenimiento urgente
       const buses = await busesNecesitanMantenimiento(empresa.id);
       setBusesUrgentes(buses.filter(b => b.urgencia === 'URGENTE'));
     } catch (error) {
