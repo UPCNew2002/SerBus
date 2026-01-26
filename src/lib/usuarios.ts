@@ -34,7 +34,14 @@ export interface CrearTrabajadorParams {
   password: string;
   empresaId: number;
 }
- 
+
+export interface CrearAdminParams {
+  nombre: string;
+  username: string;
+  password: string;
+  empresaId: number;
+}
+
 export interface ResultadoCrearUsuario {
   success: boolean;
   usuario?: Usuario;
@@ -143,7 +150,112 @@ export async function crearTrabajador(
     };
   }
 }
- 
+
+// ───────────────────────────────────────────────────────
+// CREAR ADMIN ADICIONAL (Super Admin)
+// ───────────────────────────────────────────────────────
+
+/**
+ * Crea un nuevo administrador para una empresa existente
+ * Solo puede ser ejecutado por super_admin
+ *
+ * Proceso:
+ * 1. Verifica que el username no exista
+ * 2. Crea el usuario en Supabase Auth (signUp)
+ * 3. Crea el perfil del admin vinculado a la empresa
+ * 4. Marca debe_cambiar_password = true para forzar cambio en primer login
+ *
+ * @param params - Datos del admin
+ * @returns Resultado con usuario creado
+ *
+ * @example
+ * const resultado = await crearAdmin({
+ *   nombre: 'Carlos Ruiz',
+ *   username: 'cruiz',
+ *   password: 'Admin123!',
+ *   empresaId: 4
+ * });
+ */
+export async function crearAdmin(
+  params: CrearAdminParams
+): Promise<ResultadoCrearUsuario> {
+  try {
+    console.log('👤 Creando admin:', params.nombre);
+
+    // 1. Verificar que el username no exista
+    const usernameExiste = await verificarUsernameExiste(params.username);
+    if (usernameExiste) {
+      return {
+        success: false,
+        error: 'Ya existe un usuario con ese nombre de usuario'
+      };
+    }
+
+    // 2. Crear usuario en Supabase Auth (usando signUp)
+    const emailAdmin = `${params.username}@gmail.com`;
+
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: emailAdmin,
+      password: params.password,
+      options: {
+        data: {
+          username: params.username,
+          nombre: params.nombre
+        }
+      }
+    });
+
+    if (authError || !authData.user) {
+      console.error('❌ Error creando usuario admin:', authError?.message);
+      return {
+        success: false,
+        error: `Error al crear usuario: ${authError?.message || 'Usuario no creado'}`
+      };
+    }
+
+    console.log('✅ Usuario admin creado en auth:', authData.user.id);
+
+    // 3. Crear perfil del admin
+    const { data: perfil, error: perfilError } = await supabase
+      .from('perfiles')
+      .insert({
+        id: authData.user.id, // Mismo ID que auth.users
+        nombre: params.nombre,
+        username: params.username,
+        rol: 'admin',
+        empresa_id: params.empresaId,
+        activo: true,
+        debe_cambiar_password: true  // ← Obligar cambio de contraseña en primer login
+      })
+      .select()
+      .single();
+
+    if (perfilError) {
+      console.error('❌ Error creando perfil:', perfilError.message);
+      console.warn('⚠️ No se puede hacer rollback de auth con ANON_KEY');
+
+      return {
+        success: false,
+        error: `Error al crear perfil: ${perfilError.message}`
+      };
+    }
+
+    console.log('✅ Perfil admin creado:', perfil.id);
+
+    return {
+      success: true,
+      usuario: perfil
+    };
+
+  } catch (error: any) {
+    console.error('❌ Error en crearAdmin:', error);
+    return {
+      success: false,
+      error: error.message || 'Error desconocido'
+    };
+  }
+}
+
 // ───────────────────────────────────────────────────────
 // OBTENER USUARIOS POR EMPRESA
 // ───────────────────────────────────────────────────────
