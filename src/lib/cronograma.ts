@@ -379,6 +379,67 @@ export async function obtenerBusesEmpresa(
     return [];
   }
 }
+
+/**
+ * Crear un nuevo bus en la flota
+ *
+ * @param bus - Datos del bus
+ * @returns Bus creado
+ *
+ * @example
+ * const bus = await crearBus({
+ *   empresa_id: 1,
+ *   placa: 'ABC-123',
+ *   vin: '1HGBH41JXMN109186',
+ *   marca: 'Mercedes-Benz',
+ *   modelo: 'OF-1721',
+ *   anio: 2020,
+ *   color: 'Blanco',
+ *   kilometraje_actual: 0
+ * });
+ */
+export async function crearBus(datos: {
+  empresa_id: number;
+  placa: string;
+  vin?: string | null;
+  marca?: string | null;
+  modelo?: string | null;
+  anio?: number | null;
+  color?: string | null;
+  kilometraje_actual?: number;
+}): Promise<Bus | null> {
+  try {
+    console.log('🚌 Creando nuevo bus:', datos.placa);
+
+    const { data: bus, error } = await supabase
+      .from('buses')
+      .insert({
+        empresa_id: datos.empresa_id,
+        placa: datos.placa,
+        vin: datos.vin || null,
+        marca: datos.marca || null,
+        modelo: datos.modelo || null,
+        anio: datos.anio || null,
+        color: datos.color || null,
+        kilometraje_actual: datos.kilometraje_actual || 0,
+        activo: true,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error creando bus:', error.message);
+      return null;
+    }
+
+    console.log('✅ Bus creado exitosamente:', bus.placa);
+    return bus;
+  } catch (error) {
+    console.error('❌ Error en crearBus:', error);
+    return null;
+  }
+}
+
  /**
  * Obtener lista de OTs de una empresa
  *
