@@ -16,13 +16,9 @@ export default function AdminHomeScreen({ navigation }) {
   const [busesUrgentes, setBusesUrgentes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (empresa?.id) {
-      cargarDatos();
-    }
-  }, [empresa?.id]); // ← Solo depender del ID, no del objeto completo
-
-  async function cargarDatos() {
+  const cargarDatos = React.useCallback(async () => {
+    if (!empresa?.id) return;
+    
     setLoading(true);
     try {
       // Obtener estadísticas de OTs
@@ -37,7 +33,11 @@ export default function AdminHomeScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [empresa?.id]);
+
+  useEffect(() => {
+    cargarDatos();
+  }, [cargarDatos]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
