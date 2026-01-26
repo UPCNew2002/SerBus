@@ -14,59 +14,65 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import useTrabajosStore from '../../store/trabajosStore';
-
+import useAuthStore from '../../store/authStore';
+import { crearTrabajo } from '../../lib/cronograma';
+ 
 export default function CrearTrabajoScreen({ navigation }) {
+  const { empresa } = useAuthStore();
   const [nombre, setNombre] = useState('');
   const [entraCronograma, setEntraCronograma] = useState(false);
   const [intervaloDias, setIntervaloDias] = useState('');
   const [intervaloKm, setIntervaloKm] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { agregarTrabajo, existeNombre } = useTrabajosStore();
-
-  const handleGuardar = () => {
+const handleGuardar = async () => {
     // Validaciones
     if (!nombre.trim()) {
       Alert.alert('Error', 'El nombre del trabajo es obligatorio');
       return;
     }
-
-    if (existeNombre(nombre)) {
-      Alert.alert('Error', 'Ya existe un trabajo con ese nombre');
+ 
+    if (!empresa?.id) {
+      Alert.alert('Error', 'No se pudo identificar tu empresa');
       return;
     }
-
-    // Si entra a cronograma, validar intervalos
+ 
+    // Si entra a cronograma, validar intervalo de días (km es opcional)
     if (entraCronograma) {
       if (!intervaloDias || intervaloDias === '0') {
         Alert.alert('Error', 'El intervalo en días es obligatorio y debe ser mayor a 0');
         return;
       }
-
-      if (!intervaloKm || intervaloKm === '0') {
-        Alert.alert('Error', 'El intervalo en km es obligatorio y debe ser mayor a 0');
+    }
+ 
+    // Guardar en Supabase
+    setLoading(true);
+    try {
+      const trabajo = await crearTrabajo({
+        empresa_id: empresa.id,
+        nombre: nombre.trim(),
+        categoria: entraCronograma ? 'cronograma' : 'historial',
+      });
+ 
+      if (!trabajo) {
+        Alert.alert('Error', 'No se pudo crear el trabajo. Intenta nuevamente.');
+        setLoading(false);
         return;
       }
-    }
-
-    // Guardar
-    setLoading(true);
-    setTimeout(() => {
-      agregarTrabajo({
-        nombre: nombre.trim(),
-        entraCronograma,
-        intervaloDias: entraCronograma ? parseInt(intervaloDias) : null,
-        intervaloKm: entraCronograma ? parseInt(intervaloKm) : null,
-      });
-
+ 
       setLoading(false);
       Alert.alert(
-        'Éxito',
-        `Trabajo "${nombre}" creado correctamente`,
+        '✅ Trabajo Creado',
+        `Trabajo "${nombre}" registrado correctamente en tu empresa.\n\n` +
+        `${entraCronograma ? `📅 Intervalo: ${intervaloDias} días` : '📋 Solo historial'}\n` +
+        `${intervaloKm ? `🚗 Intervalo: ${intervaloKm} km (opcional)` : ''}`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
-    }, 1000);
+    } catch (error) {
+      console.error('Error guardando trabajo:', error);
+      Alert.alert('Error', 'Ocurrió un error al guardar el trabajo');
+      setLoading(false);
+    }
   };
 
   return (
@@ -150,7 +156,7 @@ export default function CrearTrabajoScreen({ navigation }) {
             <View style={styles.warningBox}>
               <Ionicons name="alert-circle" size={18} color={COLORS.statusWarning} />
               <Text style={styles.warningText}>
-                Los intervalos son obligatorios para cronograma
+                El intervalo en días es obligatorio. El kilometraje es opcional.
               </Text>
             </View>
 
@@ -175,16 +181,16 @@ export default function CrearTrabajoScreen({ navigation }) {
               </Text>
             </View>
 
-            {/* Intervalo Km */}
+             {/* Intervalo Km - OPCIONAL */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>INTERVALO EN KM *</Text>
+              <Text style={styles.label}>INTERVALO EN KM (Opcional)</Text>
               <View style={styles.inputContainer}>
                 <View style={styles.inputIconBox}>
                   <Ionicons name="speedometer" size={20} color={COLORS.text} />
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Ej: 10000, 15000, 30000"
+                  placeholder="Ej: 10000, 15000, 30000 (opcional)"
                   placeholderTextColor={COLORS.textMuted}
                   value={intervaloKm}
                   onChangeText={(text) => setIntervaloKm(text.replace(/[^0-9]/g, ''))}
@@ -192,7 +198,7 @@ export default function CrearTrabajoScreen({ navigation }) {
                 />
               </View>
               <Text style={styles.helperText}>
-                Cada cuántos km debe hacerse este trabajo
+                Opcional: Cada cuántos km debe hacerse este trabajo
               </Text>
             </View>
 

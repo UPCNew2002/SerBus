@@ -79,7 +79,7 @@ export default function RegistrarOTScreen({ navigation }) {
   async function cargarTrabajos() {
     setLoadingTrabajos(true);
     try {
-      const trabajosData = await obtenerTrabajos();
+      const trabajosData = await obtenerTrabajos(empresa.id);
       setTrabajos(trabajosData || []);
     } catch (error) {
       console.error('Error cargando trabajos:', error);
