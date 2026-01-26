@@ -9,16 +9,15 @@ import {
   ScrollView,
   TextInput,
   Alert,
-  Switch,
   Dimensions,
   Clipboard,
-} from 'react-native';
+  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Slider } from 'expo';
 import useTemaStore from '../../store/temaStore';
 import useAuthStore from '../../store/authStore';
 import { actualizarTemaEmpresa } from '../../lib/empresas';
-import Slider from '@react-native-community/slider';
  
 const { width } = Dimensions.get('window');
  
@@ -467,57 +466,76 @@ export default function ConfigurarColoresScreen({ navigation }) {
                 </View>
               </View>
  
-              {/* Hue Slider */}
+             {/* Hue Control */}
               <View style={styles.sliderContainer}>
                 <Text style={[styles.sliderLabel, { color: text }]}>
                   <Ionicons name="color-palette" size={14} /> Matiz (Hue): {hue}°
                 </Text>
-                <View style={styles.hueGradient}>
-                  <Slider
-                    style={styles.slider}
-                    minimumValue={0}
-                    maximumValue={360}
-                    value={hue}
-                    onValueChange={setHue}
-                    minimumTrackTintColor="transparent"
-                    maximumTrackTintColor="transparent"
-                    thumbTintColor={hslToHex(hue, 100, 50)}
-                  />
+                <View style={styles.controlRow}>
+                  <TouchableOpacity
+                    style={[styles.controlButton, { backgroundColor: primary, borderColor: primary }]}
+                    onPress={() => setHue(Math.max(0, hue - 10))}
+                  >
+                    <Ionicons name="remove" size={20} color={text} />
+                  </TouchableOpacity>
+                  <View style={[styles.valueBar, { backgroundColor: hslToHex(hue, 100, 50) }]}>
+                    <Text style={[styles.valueText, { color: '#fff' }]}>{hue}°</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.controlButton, { backgroundColor: primary, borderColor: primary }]}
+                    onPress={() => setHue(Math.min(360, hue + 10))}
+                  >
+                    <Ionicons name="add" size={20} color={text} />
+                  </TouchableOpacity>
                 </View>
               </View>
  
-              {/* Saturation Slider */}
+              {/* Saturation Control */}
               <View style={styles.sliderContainer}>
                 <Text style={[styles.sliderLabel, { color: text }]}>
                   <Ionicons name="contrast" size={14} /> Saturación: {saturation}%
                 </Text>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={0}
-                  maximumValue={100}
-                  value={saturation}
-                  onValueChange={setSaturation}
-                  minimumTrackTintColor={hslToHex(hue, saturation, lightness)}
-                  maximumTrackTintColor="#444"
-                  thumbTintColor={hslToHex(hue, saturation, lightness)}
-                />
+                <View style={styles.controlRow}>
+                  <TouchableOpacity
+                    style={[styles.controlButton, { backgroundColor: primary, borderColor: primary }]}
+                    onPress={() => setSaturation(Math.max(0, saturation - 5))}
+                  >
+                    <Ionicons name="remove" size={20} color={text} />
+                  </TouchableOpacity>
+                  <View style={[styles.valueBar, { backgroundColor: hslToHex(hue, saturation, 50) }]}>
+                    <Text style={[styles.valueText, { color: '#fff' }]}>{saturation}%</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.controlButton, { backgroundColor: primary, borderColor: primary }]}
+                    onPress={() => setSaturation(Math.min(100, saturation + 5))}
+                  >
+                    <Ionicons name="add" size={20} color={text} />
+                  </TouchableOpacity>
+                </View>
               </View>
  
-              {/* Lightness Slider */}
+              {/* Lightness Control */}
               <View style={styles.sliderContainer}>
                 <Text style={[styles.sliderLabel, { color: text }]}>
                   <Ionicons name="sunny" size={14} /> Luminosidad: {lightness}%
                 </Text>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={0}
-                  maximumValue={100}
-                  value={lightness}
-                  onValueChange={setLightness}
-                  minimumTrackTintColor={hslToHex(hue, saturation, lightness)}
-                  maximumTrackTintColor="#444"
-                  thumbTintColor={hslToHex(hue, saturation, lightness)}
-                />
+                <View style={styles.controlRow}>
+                  <TouchableOpacity
+                    style={[styles.controlButton, { backgroundColor: primary, borderColor: primary }]}
+                    onPress={() => setLightness(Math.max(0, lightness - 5))}
+                  >
+                    <Ionicons name="remove" size={20} color={text} />
+                  </TouchableOpacity>
+                  <View style={[styles.valueBar, { backgroundColor: hslToHex(hue, saturation, lightness) }]}>
+                    <Text style={[styles.valueText, { color: lightness > 50 ? '#000' : '#fff' }]}>{lightness}%</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.controlButton, { backgroundColor: primary, borderColor: primary }]}
+                    onPress={() => setLightness(Math.min(100, lightness + 5))}
+                  >
+                    <Ionicons name="add" size={20} color={text} />
+                  </TouchableOpacity>
+                </View>
               </View>
  
               {/* Manual HEX Input */}
@@ -820,14 +838,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
-  hueGradient: {
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)',
+  controlRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  slider: {
-    width: '100%',
-    height: 40,
+  controlButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  valueBar: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#444',
+  },
+  valueText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
   },
   hexInputContainer: {
     marginTop: 5,
