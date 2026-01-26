@@ -503,10 +503,15 @@ export async function desactivarEmpresa(empresaId: number): Promise<boolean> {
  
 export interface TemaEmpresa {
   primary: string;
+  secondary: string;
   accent: string;
   background: string;
+  backgroundLight: string;
   card: string;
   text: string;
+  textLight: string;
+  textMuted: string;
+  border: string;
 }
  
 /**
@@ -517,13 +522,13 @@ export interface TemaEmpresa {
  * @returns true si se actualizó correctamente
  *
  * @example
- * const exito = await actualizarTemaEmpresa(1, {
+ * const tema = {
  *   primary: '#dc2626',
+ *   secondary: '#0a0a0a',
  *   accent: '#fbbf24',
- *   background: '#0f0f0f',
- *   card: '#1a1a1a',
- *   text: '#ffffff'
- * });
+ *   ...
+ * };
+ * const actualizado = await actualizarTemaEmpresa(1, tema);
  */
 export async function actualizarTemaEmpresa(
   empresaId: number,
