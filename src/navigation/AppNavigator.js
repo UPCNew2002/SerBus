@@ -38,6 +38,7 @@ import WorkerHomeScreen from '../screens/worker/WorkerHomeScreen';
 import WorkerOTsListScreen from '../screens/worker/WorkerOTsListScreen';
 import WorkerDetalleOTScreen from '../screens/worker/WorkerDetalleOTScreen';
 import WorkerCronogramaScreen from '../screens/worker/WorkerCronogramaScreen';
+import RegistrarBusScreen from '../screens/admin/RegistrarBusScreen';
 
 const Stack = createStackNavigator();
 
@@ -82,6 +83,7 @@ if (user?.rol === 'admin') {
         <Stack.Screen name="OTsList" component={OTsListScreen} />
         <Stack.Screen name="DetalleOT" component={DetalleOTScreen} />
         <Stack.Screen name="ListaBuses" component={ListaBusesScreen} />
+        <Stack.Screen name="RegistrarBus" component={RegistrarBusScreen} />
         <Stack.Screen name="TrabajosList" component={TrabajosListScreen} />
         <Stack.Screen name="CrearTrabajo" component={CrearTrabajoScreen} />
         <Stack.Screen name="EditarTrabajo" component={EditarTrabajoScreen} />
