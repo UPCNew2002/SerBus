@@ -3,8 +3,6 @@
 
 import { useEffect, useState } from 'react';
 import useTemaStore from '../store/temaStore';
-
-import useTemaStore from '../store/temaStore';
  
 export const useColores = () => {
   // El selector de Zustand ya es reactivo, no necesitamos subscribe manual
