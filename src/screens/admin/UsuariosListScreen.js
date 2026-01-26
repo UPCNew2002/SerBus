@@ -1,6 +1,6 @@
 // src/screens/admin/UsuariosListScreen.js
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,33 +8,79 @@ import {
   StyleSheet,
   FlatList,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import useUsuariosStore from '../../store/usuariosStore';
 import useAuthStore from '../../store/authStore';
+import {
+  obtenerUsuariosPorEmpresa,
+  cambiarEstadoUsuario,
+  eliminarUsuario,
+} from '../../lib/usuarios';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function UsuariosListScreen({ navigation }) {
-  const { usuarios, cambiarEstadoUsuario, eliminarUsuario } = useUsuariosStore();
   const { empresa } = useAuthStore();
+  const [usuarios, setUsuarios] = useState([]);
+  const [cargando, setCargando] = useState(true);
 
-  // Filtrar usuarios por empresa
-  const usuariosEmpresa = usuarios.filter((user) => user.empresaId === empresa?.id);
+  // Cargar usuarios desde Supabase
+  const cargarUsuarios = async () => {
+    if (!empresa?.id) return;
+
+    setCargando(true);
+    const usuariosData = await obtenerUsuariosPorEmpresa(empresa.id, true);
+    setUsuarios(usuariosData);
+    setCargando(false);
+  };
+
+  // Recargar cuando la pantalla obtiene foco
+  useFocusEffect(
+    React.useCallback(() => {
+      cargarUsuarios();
+    }, [empresa?.id])
+  );
+
+  const usuariosEmpresa = usuarios;
 
   const handleEliminar = (usuario) => {
     Alert.alert(
       'Confirmar eliminación',
-      `¿Eliminar a "${usuario.nombre}"?\n\nEsta acción no se puede deshacer.`,
+      `¿Desactivar a "${usuario.nombre}"?\n\nPodrás reactivarlo más tarde.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: 'Desactivar',
           style: 'destructive',
-          onPress: () => eliminarUsuario(usuario.id),
+          onPress: async () => {
+            const exito = await eliminarUsuario(usuario.id);
+            if (exito) {
+              Alert.alert('Éxito', 'Usuario desactivado correctamente');
+              cargarUsuarios(); // Recargar lista
+            } else {
+              Alert.alert('Error', 'No se pudo desactivar el usuario');
+            }
+          },
         },
       ]
     );
+  };
+
+  const handleCambiarEstado = async (usuario) => {
+    const nuevoEstado = !usuario.activo;
+    const exito = await cambiarEstadoUsuario(usuario.id, nuevoEstado);
+
+    if (exito) {
+      Alert.alert(
+        'Éxito',
+        `Usuario ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`
+      );
+      cargarUsuarios(); // Recargar lista
+    } else {
+      Alert.alert('Error', 'No se pudo cambiar el estado del usuario');
+    }
   };
 
   const renderUsuario = ({ item }) => (
@@ -47,10 +93,10 @@ export default function UsuariosListScreen({ navigation }) {
           <Text style={styles.usuarioNombre}>{item.nombre}</Text>
           <View style={styles.usuarioDetalles}>
             <Ionicons name="at" size={12} color={COLORS.textMuted} />
-            <Text style={styles.usuarioUsuario}>{item.usuario}</Text>
+            <Text style={styles.usuarioUsuario}>{item.username}</Text>
           </View>
           <Text style={styles.usuarioFecha}>
-            Creado: {new Date(item.fechaCreacion).toLocaleDateString('es-PE')}
+            Creado: {new Date(item.created_at).toLocaleDateString('es-PE')}
           </Text>
         </View>
         <View
@@ -76,7 +122,7 @@ export default function UsuariosListScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.toggleButton}
-          onPress={() => cambiarEstadoUsuario(item.id)}
+          onPress={() => handleCambiarEstado(item)}
         >
           <Ionicons
             name={item.activo ? 'close-circle' : 'checkmark-circle'}
@@ -146,24 +192,31 @@ export default function UsuariosListScreen({ navigation }) {
       </View>
 
       {/* Lista */}
-      <FlatList
-        data={usuariosEmpresa}
-        renderItem={renderUsuario}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.lista}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={60} color={COLORS.textMuted} />
-            <Text style={styles.emptyText}>No hay trabajadores registrados</Text>
-            <TouchableOpacity
-              style={styles.emptyButton}
-              onPress={() => navigation.navigate('CrearUsuario')}
-            >
-              <Text style={styles.emptyButtonText}>Crear Primer Trabajador</Text>
-            </TouchableOpacity>
-          </View>
-        }
-      />
+      {cargando ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Cargando usuarios...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={usuariosEmpresa}
+          renderItem={renderUsuario}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.lista}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people-outline" size={60} color={COLORS.textMuted} />
+              <Text style={styles.emptyText}>No hay trabajadores registrados</Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => navigation.navigate('CrearUsuario')}
+              >
+                <Text style={styles.emptyButtonText}>Crear Primer Trabajador</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -380,5 +433,15 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     color: COLORS.text,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: COLORS.textMuted,
   },
 });

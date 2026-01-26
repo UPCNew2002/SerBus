@@ -1,6 +1,6 @@
 // src/screens/admin/EditarUsuarioScreen.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,25 +9,45 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import useUsuariosStore from '../../store/usuariosStore';
+import {
+  obtenerUsuarioPorId,
+  actualizarUsuario,
+  verificarUsernameExiste,
+} from '../../lib/usuarios';
 
 export default function EditarUsuarioScreen({ route, navigation }) {
   const { usuarioId } = route.params;
-  const { obtenerUsuario, editarUsuario, existeUsuario } = useUsuariosStore();
-  
-  const usuario = obtenerUsuario(usuarioId);
 
-  const [nombre, setNombre] = useState(usuario?.nombre || '');
-  const [usuarioNombre, setUsuarioNombre] = useState(usuario?.usuario || '');
+  const [usuario, setUsuario] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [nombre, setNombre] = useState('');
+  const [usuarioNombre, setUsuarioNombre] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleGuardar = () => {
+  // Cargar usuario desde Supabase
+  useEffect(() => {
+    const cargarUsuario = async () => {
+      setCargando(true);
+      const data = await obtenerUsuarioPorId(usuarioId);
+      if (data) {
+        setUsuario(data);
+        setNombre(data.nombre);
+        setUsuarioNombre(data.username);
+      }
+      setCargando(false);
+    };
+
+    cargarUsuario();
+  }, [usuarioId]);
+
+  const handleGuardar = async () => {
     if (!nombre.trim()) {
       Alert.alert('Error', 'El nombre completo es obligatorio');
       return;
@@ -38,36 +58,43 @@ export default function EditarUsuarioScreen({ route, navigation }) {
       return;
     }
 
-    if (existeUsuario(usuarioNombre, usuarioId)) {
-      Alert.alert('Error', 'Ya existe otro usuario con ese nombre');
-      return;
-    }
-
-    // Si se ingresó contraseña, validar
-    if (password && password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
-      return;
+    // Verificar si el username ya existe (excluyendo el usuario actual)
+    if (usuarioNombre.toLowerCase() !== usuario.username.toLowerCase()) {
+      const existe = await verificarUsernameExiste(usuarioNombre);
+      if (existe) {
+        Alert.alert('Error', 'Ya existe otro usuario con ese nombre');
+        return;
+      }
     }
 
     setLoading(true);
-    setTimeout(() => {
-      const datosActualizar = {
-        nombre: nombre.trim(),
-        usuario: usuarioNombre.trim().toLowerCase(),
-      };
 
-      // Solo actualizar password si se ingresó uno nuevo
-      if (password) {
-        datosActualizar.password = password;
-      }
+    const datosActualizar = {
+      nombre: nombre.trim(),
+      username: usuarioNombre.trim().toLowerCase(),
+    };
 
-      editarUsuario(usuarioId, datosActualizar);
-      setLoading(false);
+    const exito = await actualizarUsuario(usuarioId, datosActualizar);
+
+    setLoading(false);
+
+    if (exito) {
       Alert.alert('Éxito', 'Usuario actualizado correctamente', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
-    }, 1000);
+    } else {
+      Alert.alert('Error', 'No se pudo actualizar el usuario');
+    }
   };
+
+  if (cargando) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Cargando usuario...</Text>
+      </View>
+    );
+  }
 
   if (!usuario) {
     return (
@@ -96,9 +123,9 @@ export default function EditarUsuarioScreen({ route, navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.warningBox}>
-          <Ionicons name="warning" size={20} color={COLORS.statusWarning} />
+          <Ionicons name="information-circle" size={20} color={COLORS.accent} />
           <Text style={styles.warningText}>
-            Si cambias la contraseña, informa al trabajador su nueva clave de acceso
+            Solo puedes editar el nombre y usuario. Para cambiar contraseñas, el usuario debe hacerlo desde su perfil.
           </Text>
         </View>
 
@@ -141,38 +168,6 @@ export default function EditarUsuarioScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Nueva contraseña (opcional) */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>NUEVA CONTRASEÑA (Opcional)</Text>
-          <View style={styles.inputContainer}>
-            <View style={styles.inputIconBox}>
-              <Ionicons name="key" size={20} color={COLORS.text} />
-            </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Dejar vacío para no cambiar"
-              placeholderTextColor={COLORS.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Ionicons
-                name={showPassword ? 'eye' : 'eye-off'}
-                size={20}
-                color={COLORS.textMuted}
-              />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.helperText}>
-            Solo completa si deseas cambiar la contraseña
-          </Text>
-        </View>
-
         <TouchableOpacity
           style={[styles.guardarButton, loading && styles.guardarButtonDisabled]}
           onPress={handleGuardar}
@@ -192,6 +187,8 @@ export default function EditarUsuarioScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  loadingContainer: { justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 10, fontSize: 14, color: COLORS.textMuted },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -214,7 +211,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: COLORS.statusWarning,
+    borderLeftColor: COLORS.accent,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -233,8 +230,6 @@ const styles = StyleSheet.create({
   },
   inputIconBox: { width: 45, height: 50, backgroundColor: COLORS.metal, justifyContent: 'center', alignItems: 'center' },
   input: { flex: 1, height: 50, paddingHorizontal: 15, fontSize: 15, color: COLORS.text },
-  eyeButton: { paddingHorizontal: 15, height: 50, justifyContent: 'center' },
-  helperText: { fontSize: 11, color: COLORS.textMuted, marginTop: 5, marginLeft: 5 },
   guardarButton: {
     flexDirection: 'row',
     backgroundColor: COLORS.primary,
