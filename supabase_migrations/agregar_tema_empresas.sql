@@ -1,22 +1,37 @@
 -- ═══════════════════════════════════════════════════════
--- AGREGAR CAMPO TEMA A TABLA EMPRESAS
+-- MIGRATION: Agregar columna 'tema' a la tabla empresas
 -- ═══════════════════════════════════════════════════════
 --
--- Este script agrega un campo JSONB para almacenar el tema
--- visual personalizado de cada empresa.
+-- Descripción:
+-- Agrega una columna JSONB para almacenar el tema personalizado
+-- de cada empresa (colores, diseño, etc.)
 --
--- Ejecutar en Supabase SQL Editor
+-- Autor: Claude
+-- Fecha: 2026-01-26
 -- ═══════════════════════════════════════════════════════
 
--- Agregar columna tema (JSONB)
+-- Agregar columna tema (JSONB permite almacenar objetos JSON)
 ALTER TABLE empresas
 ADD COLUMN IF NOT EXISTS tema JSONB DEFAULT NULL;
 
--- Comentario explicativo
-COMMENT ON COLUMN empresas.tema IS 'Tema visual personalizado de la empresa (primary, accent, background, card, text)';
+-- Agregar comentario descriptivo
+COMMENT ON COLUMN empresas.tema IS 'Tema visual personalizado de la empresa (colores y diseño)';
 
--- Verificar
-SELECT column_name, data_type, column_default
-FROM information_schema.columns
-WHERE table_name = 'empresas'
-  AND column_name = 'tema';
+-- ═══════════════════════════════════════════════════════
+-- ESTRUCTURA ESPERADA DEL CAMPO tema:
+-- ═══════════════════════════════════════════════════════
+--
+-- {
+--   "primary": "#dc2626",
+--   "secondary": "#0a0a0a",
+--   "accent": "#fbbf24",
+--   "background": "#0f0f0f",
+--   "backgroundLight": "#1e1e1e",
+--   "card": "#1a1a1a",
+--   "text": "#ffffff",
+--   "textLight": "#e5e5e5",
+--   "textMuted": "#888888",
+--   "border": "#333333"
+-- }
+--
+-- ═══════════════════════════════════════════════════════

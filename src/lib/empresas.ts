@@ -11,7 +11,7 @@
 // ═══════════════════════════════════════════════════════
  
 import { supabase } from './supabase';
- 
+import { verificarUsernameExiste } from './usuarios';
 // ───────────────────────────────────────────────────────
 // TIPOS
 // ───────────────────────────────────────────────────────
@@ -48,9 +48,11 @@ export interface ResultadoCrearEmpresa {
  * Crea una nueva empresa junto con su usuario administrador
  *
  * Proceso:
- * 1. Crea el usuario admin en Supabase Auth (signUp)
- * 2. Crea la empresa en la tabla empresas
- * 3. Crea el perfil del admin vinculado a la empresa
+* 1. Verifica que el RUC no exista
+ * 2. Verifica que el username del admin no exista
+ * 3. Crea el usuario admin en Supabase Auth (signUp)
+ * 4. Crea la empresa en la tabla empresas
+ * 5. Crea el perfil del admin vinculado a la empresa
  *
  * @param params - Datos de la empresa y admin
  * @returns Resultado con empresa y admin creados
@@ -79,7 +81,16 @@ export async function crearEmpresaConAdmin(
       };
     }
  
-    // 2. Crear usuario admin en Supabase Auth (usando signUp)
+    // 2. Verificar que el username del admin no exista
+    const usernameExiste = await verificarUsernameExiste(params.adminUsuario);
+    if (usernameExiste) {
+      return {
+        success: false,
+        error: 'Ya existe un usuario con ese nombre de usuario'
+      };
+    }
+ 
+    // 3. Crear usuario admin en Supabase Auth (usando signUp)
     const emailAdmin = `${params.adminUsuario}@gmail.com`;
  
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -103,7 +114,7 @@ export async function crearEmpresaConAdmin(
  
     console.log('✅ Usuario admin creado:', authData.user.id);
  
-    // 3. Crear empresa en la tabla (usando "nombre" en lugar de "razon_social")
+    // 4. Crear empresa en la tabla (usando "nombre" en lugar de "razon_social")
     const { data: empresa, error: empresaError } = await supabase
       .from('empresas')
       .insert({
@@ -126,7 +137,7 @@ export async function crearEmpresaConAdmin(
  
     console.log('✅ Empresa creada:', empresa.id);
  
-    // 4. Crear perfil del admin vinculado a la empresa
+    // 5. Crear perfil del admin vinculado a la empresa
     const { data: perfil, error: perfilError } = await supabase
       .from('perfiles')
       .insert({
@@ -284,7 +295,7 @@ export async function actualizarEmpresa(
 // ───────────────────────────────────────────────────────
 // OBTENER TODAS LAS EMPRESAS (SUPER ADMIN)
 // ───────────────────────────────────────────────────────
-
+ 
 export interface EmpresaConAdmin {
   id: number;
   nombre: string;
@@ -294,7 +305,7 @@ export interface EmpresaConAdmin {
   adminUsuario: string;
   adminNombre: string;
 }
-
+ 
 /**
  * Obtiene todas las empresas (activas e inactivas) con información del admin
  * Solo para uso de super_admin
@@ -306,19 +317,19 @@ export async function obtenerTodasLasEmpresas(): Promise<EmpresaConAdmin[]> {
       .from('empresas')
       .select('*')
       .order('created_at', { ascending: false });
-
+ 
     if (errorEmpresas) {
       console.error('❌ Error obteniendo empresas:', errorEmpresas.message);
       return [];
     }
-
+ 
     if (!empresas || empresas.length === 0) {
       return [];
     }
-
+ 
     // Para cada empresa, obtener el perfil del admin
     const empresasConAdmin: EmpresaConAdmin[] = [];
-
+ 
     for (const empresa of empresas) {
       // Buscar el perfil del admin de esta empresa
       const { data: admin } = await supabase
@@ -327,7 +338,7 @@ export async function obtenerTodasLasEmpresas(): Promise<EmpresaConAdmin[]> {
         .eq('empresa_id', empresa.id)
         .eq('rol', 'admin')
         .single();
-
+ 
       empresasConAdmin.push({
         id: empresa.id,
         nombre: empresa.nombre,
@@ -338,14 +349,14 @@ export async function obtenerTodasLasEmpresas(): Promise<EmpresaConAdmin[]> {
         adminNombre: admin?.nombre || 'Sin nombre',
       });
     }
-
+ 
     return empresasConAdmin;
   } catch (error) {
     console.error('❌ Error en obtenerTodasLasEmpresas:', error);
     return [];
   }
 }
-
+ 
 /**
  * Cambia el estado activo/inactivo de una empresa
  */
@@ -357,24 +368,24 @@ export async function cambiarEstadoEmpresa(empresaId: number): Promise<boolean> 
       .select('activo')
       .eq('id', empresaId)
       .single();
-
+ 
     if (!empresa) {
       return false;
     }
-
+ 
     // Cambiar al estado opuesto
     const nuevoEstado = !empresa.activo;
-
+ 
     const { error } = await supabase
       .from('empresas')
       .update({ activo: nuevoEstado })
       .eq('id', empresaId);
-
+ 
     if (error) {
       console.error('❌ Error cambiando estado:', error.message);
       return false;
     }
-
+ 
     console.log(`✅ Empresa ${nuevoEstado ? 'activada' : 'desactivada'}`);
     return true;
   } catch (error) {
@@ -382,7 +393,7 @@ export async function cambiarEstadoEmpresa(empresaId: number): Promise<boolean> 
     return false;
   }
 }
-
+ 
 // ───────────────────────────────────────────────────────
 // VERIFICAR SI EXISTE RUC
 // ───────────────────────────────────────────────────────
@@ -491,10 +502,15 @@ export async function desactivarEmpresa(empresaId: number): Promise<boolean> {
 
 export interface TemaEmpresa {
   primary: string;
+  secondary: string;
   accent: string;
   background: string;
+  backgroundLight: string;
   card: string;
   text: string;
+  textLight: string;
+  textMuted: string;
+  border: string;
 }
 
 /**
@@ -505,13 +521,13 @@ export interface TemaEmpresa {
  * @returns true si se actualizó correctamente
  *
  * @example
- * const exito = await actualizarTemaEmpresa(1, {
+ * const tema = {
  *   primary: '#dc2626',
+ *   secondary: '#0a0a0a',
  *   accent: '#fbbf24',
- *   background: '#0f0f0f',
- *   card: '#1a1a1a',
- *   text: '#ffffff'
- * });
+ *   ...
+ * };
+ * const actualizado = await actualizarTemaEmpresa(1, tema);
  */
 export async function actualizarTemaEmpresa(
   empresaId: number,
