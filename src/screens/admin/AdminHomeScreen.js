@@ -9,33 +9,36 @@ import useAuthStore from '../../store/authStore';
 import { obtenerEstadisticasOTs, busesNecesitanMantenimiento } from '../../lib/cronograma';
 
 export default function AdminHomeScreen({ navigation }) {
-  const { user, empresa, logout } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const empresaId = useAuthStore((state) => state.empresa?.id);
+  const empresaNombre = useAuthStore((state) => state.empresa?.nombre);
+  const logout = useAuthStore((state) => state.logout);
   const COLORS = useColores();
-
+ 
   const [estadisticas, setEstadisticas] = useState(null);
   const [busesUrgentes, setBusesUrgentes] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const cargarDatos = React.useCallback(async () => {
-    if (!empresa?.id) return;
-    
-    setLoading(true);
-    try {
-      const stats = await obtenerEstadisticasOTs(empresa.id);
-      setEstadisticas(stats);
-
-      const buses = await busesNecesitanMantenimiento(empresa.id);
-      setBusesUrgentes(buses.filter(b => b.urgencia === 'URGENTE'));
-    } catch (error) {
-      console.error('Error cargando datos:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [empresa?.id]);
-
+ 
   useEffect(() => {
+    if (!empresaId) return;
+ 
+    const cargarDatos = async () => {
+      setLoading(true);
+      try {
+        const stats = await obtenerEstadisticasOTs(empresaId);
+        setEstadisticas(stats);
+ 
+        const buses = await busesNecesitanMantenimiento(empresaId);
+        setBusesUrgentes(buses.filter(b => b.urgencia === 'URGENTE'));
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+ 
     cargarDatos();
-  }, [cargarDatos]);
+  }, [empresaId]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
@@ -45,7 +48,7 @@ export default function AdminHomeScreen({ navigation }) {
         <Text style={[styles.title, { color: COLORS.text }]}>PANEL EMPRESA</Text>
         <Text style={[styles.subtitle, { color: COLORS.textMuted }]}>Administrador</Text>
         <Text style={[styles.empresaName, { color: COLORS.primary }]}>
-          {empresa?.nombre || 'Mi Empresa'}
+          {empresaNombre || 'Mi Empresa'}
         </Text>
       </View>
 
