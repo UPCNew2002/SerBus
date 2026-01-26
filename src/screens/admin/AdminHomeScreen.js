@@ -20,7 +20,7 @@ export default function AdminHomeScreen({ navigation }) {
     if (empresa?.id) {
       cargarDatos();
     }
-  }, [empresa]);
+  }, [empresa?.id]); // ← Solo depender del ID, no del objeto completo
 
   async function cargarDatos() {
     setLoading(true);
