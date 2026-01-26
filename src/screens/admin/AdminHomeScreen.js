@@ -16,20 +16,14 @@ export default function AdminHomeScreen({ navigation }) {
   const [busesUrgentes, setBusesUrgentes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (empresa?.id) {
-      cargarDatos();
-    }
-  }, [empresa?.id]); // ← Solo depender del ID, no del objeto completo
+  const cargarDatos = React.useCallback(async () => {
+    if (!empresa?.id) return;
 
-  async function cargarDatos() {
     setLoading(true);
     try {
-      // Obtener estadísticas de OTs
       const stats = await obtenerEstadisticasOTs(empresa.id);
       setEstadisticas(stats);
 
-      // Obtener buses que necesitan mantenimiento urgente
       const buses = await busesNecesitanMantenimiento(empresa.id);
       setBusesUrgentes(buses.filter(b => b.urgencia === 'URGENTE'));
     } catch (error) {
@@ -37,7 +31,11 @@ export default function AdminHomeScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [empresa?.id]);
+
+  useEffect(() => {
+    cargarDatos();
+  }, [cargarDatos]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>

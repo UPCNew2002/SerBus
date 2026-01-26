@@ -22,31 +22,41 @@ const TEMA_DEFAULT = {
   primaryDark: '#991b1b',
 };
 
-const useTemaStore = create((set) => ({
+const useTemaStore = create((set, get) => ({
   colores: { ...TEMA_DEFAULT },
 
   // Cargar tema de empresa
   cargarTema: (temaEmpresa) => {
-    if (temaEmpresa) {
-      set({
-        colores: {
-          ...TEMA_DEFAULT,
-          ...temaEmpresa,
-        },
-      });
-    } else {
-      set({ colores: { ...TEMA_DEFAULT } });
+    const nuevosColores = temaEmpresa
+      ? { ...TEMA_DEFAULT, ...temaEmpresa }
+      : { ...TEMA_DEFAULT };
+
+    // Solo actualizar si los colores realmente cambiaron
+    const coloresActuales = get().colores;
+    const hayDiferencias = Object.keys(nuevosColores).some(
+      (key) => nuevosColores[key] !== coloresActuales[key]
+    );
+
+    if (hayDiferencias) {
+      set({ colores: nuevosColores });
     }
   },
 
   // Resetear a tema default
   resetearTema: () => {
-    set({ colores: { ...TEMA_DEFAULT } });
+    const coloresActuales = get().colores;
+    const hayDiferencias = Object.keys(TEMA_DEFAULT).some(
+      (key) => TEMA_DEFAULT[key] !== coloresActuales[key]
+    );
+
+    if (hayDiferencias) {
+      set({ colores: { ...TEMA_DEFAULT } });
+    }
   },
 
   // Obtener colores actuales
   obtenerColores: () => {
-    return useTemaStore.getState().colores;
+    return get().colores;
   },
 }));
 
