@@ -53,12 +53,11 @@ export default function RegistrarOTScreen({ navigation }) {
   const { agregarOT, existeNumeroOT } = useOTsStore();
   const { empresa, user } = useAuthStore();
  
-  // Generar número de OT automáticamente al cargar
+  // Cargar buses y trabajos al iniciar (NO generar OT automáticamente)
   useEffect(() => {
     if (empresa?.id) {
-      generarNumeroOTAutomatico();
       cargarBuses();
-    cargarTrabajos();
+      cargarTrabajos();
     }
   }, [empresa]);
  
@@ -80,7 +79,7 @@ export default function RegistrarOTScreen({ navigation }) {
   async function cargarTrabajos() {
     setLoadingTrabajos(true);
     try {
-      const trabajosData = await obtenerTrabajos();
+      const trabajosData = await obtenerTrabajos(empresa.id);
       setTrabajos(trabajosData || []);
     } catch (error) {
       console.error('Error cargando trabajos:', error);
@@ -212,7 +211,18 @@ const handleGuardar = async () => {
       Alert.alert('Error', 'El número de OT es obligatorio');
       return;
     }
+ // Validar que sea exactamente 7 dígitos
+    if (numeroOT.length !== 7) {
+      Alert.alert('Error', 'El número de OT debe tener exactamente 7 dígitos');
+      return;
+    }
  
+    // Validar que sea solo números
+    if (!/^\d{7}$/.test(numeroOT)) {
+      Alert.alert('Error', 'El número de OT solo debe contener números');
+      return;
+    }
+
     if (!busSeleccionado) {
       Alert.alert('Error', 'Debes seleccionar un bus de la flota');
       return;
@@ -260,7 +270,7 @@ const handleGuardar = async () => {
         empresa_id: empresa.id,
         bus_id: busSeleccionado.id,
         trabajador_id: user?.id || null,
-        numero_ot: numeroOT.toUpperCase(),
+        numero_ot: numeroOT, // Ya es un número de 7 dígitos
         fecha_inicio: fecha,
         observaciones: JSON.stringify(datosAdicionales),
         trabajos_ids: trabajosSeleccionados.map((t) => t.id),
@@ -319,7 +329,7 @@ const handleGuardar = async () => {
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color={COLORS.accent} />
           <Text style={styles.infoText}>
-            Todos los campos son obligatorios excepto el kilometraje
+            Campos opcionales: VIN y kilometraje. Todos los demás son obligatorios.
           </Text>
         </View>
  
@@ -343,34 +353,27 @@ const handleGuardar = async () => {
  
         {/* Número OT */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>NÚMERO DE OT *</Text>
+     <Text style={styles.label}>NÚMERO DE OT (7 dígitos) *</Text>
           <View style={styles.inputContainer}>
             <View style={styles.inputIconBox}>
               <Ionicons name="document-text" size={20} color={COLORS.text} />
             </View>
             <TextInput
               style={styles.input}
-              placeholder={generandoNumeroOT ? "Generando..." : "OT-2026-0001"}
+              placeholder="Ej: 1234567"
               placeholderTextColor={COLORS.textMuted}
               value={numeroOT}
-              onChangeText={(text) => setNumeroOT(text.toUpperCase())}
-              autoCapitalize="characters"
-              editable={!generandoNumeroOT}
+              onChangeText={(text) => {
+                // Solo permitir números, máximo 7 dígitos
+                const numeros = text.replace(/[^0-9]/g, '');
+                setNumeroOT(numeros.slice(0, 7));
+              }}
+              keyboardType="numeric"
+              maxLength={7}
             />
-            <TouchableOpacity
-              style={styles.regenerateButton}
-              onPress={generarNumeroOTAutomatico}
-              disabled={generandoNumeroOT}
-            >
-              <Ionicons
-                name={generandoNumeroOT ? "hourglass" : "refresh"}
-                size={20}
-                color={COLORS.primary}
-              />
-            </TouchableOpacity>
           </View>
           <Text style={styles.helperText}>
-            {generandoNumeroOT ? "Generando número automático..." : "Generado automáticamente - Puedes editarlo"}
+            Ingresa un número entero de 7 dígitos ({numeroOT.length}/7)
           </Text>
         </View>
  
@@ -408,47 +411,50 @@ const handleGuardar = async () => {
         {/* Placa */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>PLACA *</Text>
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, !busSeleccionado && styles.inputDisabled]}>
             <View style={styles.inputIconBox}>
               <Ionicons name="car" size={20} color={COLORS.text} />
             </View>
             <TextInput
               style={styles.input}
-              placeholder="Ej: ABC-123"
+              placeholder={busSeleccionado ? "Auto-completado" : "Primero selecciona un bus"}
               placeholderTextColor={COLORS.textMuted}
               value={placa}
-              onChangeText={(text) => setPlaca(text.toUpperCase())}
-              autoCapitalize="characters"
-              maxLength={10}
-              editable={!busSeleccionado}
+              editable={false}
             />
+            {!busSeleccionado && (
+              <View style={styles.lockIcon}>
+                <Ionicons name="lock-closed" size={18} color={COLORS.textMuted} />
+              </View>
+            )}
           </View>
-          {busSeleccionado && (
-            <Text style={styles.helperText}>Auto-completado desde bus seleccionado</Text>
-          )}
+          <Text style={styles.helperText}>
+            {busSeleccionado ? 'Auto-completado desde bus seleccionado' : 'Debes seleccionar un bus primero'}
+          </Text>
         </View>
- 
-        {/* VIN */}
+ {/* VIN - OPCIONAL */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>VIN (Número de Identificación del Vehículo) *</Text>
-          <View style={styles.inputContainer}>
+          <Text style={styles.label}>VIN (Opcional)</Text>
+          <View style={[styles.inputContainer, !busSeleccionado && styles.inputDisabled]}>
             <View style={styles.inputIconBox}>
               <Ionicons name="barcode" size={20} color={COLORS.text} />
             </View>
             <TextInput
               style={styles.input}
-              placeholder="17 caracteres"
+              placeholder={busSeleccionado ? "Auto-completado" : "Primero selecciona un bus"}
               placeholderTextColor={COLORS.textMuted}
-              value={vin}
-              onChangeText={(text) => setVin(text.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-              autoCapitalize="characters"
-              maxLength={17}
-              editable={!busSeleccionado}
+              value={vin || '(Sin VIN)'}
+              editable={false}
             />
+            {!busSeleccionado && (
+              <View style={styles.lockIcon}>
+                <Ionicons name="lock-closed" size={18} color={COLORS.textMuted} />
+              </View>
+            )}
           </View>
           <Text style={styles.helperText}>
-            {busSeleccionado ? 'Auto-completado desde bus seleccionado' : `${vin.length}/17 caracteres`}
-          </Text>
+            {busSeleccionado ? 'Auto-completado desde bus seleccionado' : 'Debes seleccionar un bus primero'}
+              </Text>
         </View>
  
         {/* Kilometraje */}
@@ -1187,5 +1193,15 @@ const styles = StyleSheet.create({
   busItemKm: {
     fontSize: 12,
     color: COLORS.textMuted,
+  },
+  lockIcon: {
+    width: 40,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inputDisabled: {
+    opacity: 0.6,
+    backgroundColor: COLORS.metal,
   },
 });

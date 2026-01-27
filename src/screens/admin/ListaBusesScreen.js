@@ -118,7 +118,12 @@ export default function ListaBusesScreen({ navigation }) {
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>FLOTA DE BUSES</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('RegistrarBus')}
+        >
+          <Ionicons name="add" size={24} color={COLORS.text} />
+        </TouchableOpacity>
       </View>
  
       <View style={styles.searchContainer}>
@@ -176,6 +181,14 @@ const styles = StyleSheet.create({
   },
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, letterSpacing: 1.5 },
+  addButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',

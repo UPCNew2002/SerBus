@@ -1,6 +1,6 @@
 // src/screens/admin/TrabajosListScreen.js
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,34 @@ import {
   StyleSheet,
   FlatList,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import useTrabajosStore from '../../store/trabajosStore';
-
+import useAuthStore from '../../store/authStore';
+import { obtenerTrabajos } from '../../lib/cronograma';
+ 
 export default function TrabajosListScreen({ navigation }) {
-  const { trabajos, eliminarTrabajo } = useTrabajosStore();
+  const { empresa } = useAuthStore();
+  const [trabajos, setTrabajos] = useState([]);
+  const [loading, setLoading] = useState(true);
+ 
+  useEffect(() => {
+    cargarTrabajos();
+  }, []);
+ 
+  async function cargarTrabajos() {
+    setLoading(true);
+    try {
+      const trabajosData = await obtenerTrabajos(empresa.id);
+      setTrabajos(trabajosData || []);
+    } catch (error) {
+      console.error('Error cargando trabajos:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleEliminar = (trabajo) => {
     Alert.alert(
@@ -26,7 +46,15 @@ export default function TrabajosListScreen({ navigation }) {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => eliminarTrabajo(trabajo.id),
+          onPress: async () => {
+            const eliminado = await eliminarTrabajo(trabajo.id);
+            if (eliminado) {
+              Alert.alert('Éxito', `Trabajo "${trabajo.nombre}" eliminado`);
+              cargarTrabajos(); // Recargar lista
+            } else {
+              Alert.alert('Error', 'No se pudo eliminar el trabajo');
+            }
+          },
         },
       ]
     );
@@ -142,6 +170,13 @@ export default function TrabajosListScreen({ navigation }) {
         renderItem={renderTrabajo}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.lista}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={cargarTrabajos}
+            colors={[COLORS.primary]}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="construct-outline" size={60} color={COLORS.textMuted} />

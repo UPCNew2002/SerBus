@@ -379,6 +379,66 @@ export async function obtenerBusesEmpresa(
     return [];
   }
 }
+/**
+ * Crear un nuevo bus en la flota
+ *
+ * @param bus - Datos del bus
+ * @returns Bus creado
+ *
+ * @example
+ * const bus = await crearBus({
+ *   empresa_id: 1,
+ *   placa: 'ABC-123',
+ *   vin: '1HGBH41JXMN109186',
+ *   marca: 'Mercedes-Benz',
+ *   modelo: 'OF-1721',
+ *   anio: 2020,
+ *   color: 'Blanco',
+ *   kilometraje_actual: 0
+ * });
+ */
+export async function crearBus(datos: {
+  empresa_id: number;
+  placa: string;
+  vin?: string | null;
+  marca?: string | null;
+  modelo?: string | null;
+  anio?: number | null;
+  color?: string | null;
+  kilometraje_actual?: number;
+}): Promise<Bus | null> {
+  try {
+    console.log('🚌 Creando nuevo bus:', datos.placa);
+ 
+    const { data: bus, error } = await supabase
+      .from('buses')
+      .insert({
+        empresa_id: datos.empresa_id,
+        placa: datos.placa,
+        vin: datos.vin || null,
+        marca: datos.marca || null,
+        modelo: datos.modelo || null,
+        anio: datos.anio || null,
+        color: datos.color || null,
+        kilometraje_actual: datos.kilometraje_actual || 0,
+        activo: true,
+      })
+      .select()
+      .single();
+ 
+    if (error) {
+      console.error('❌ Error creando bus:', error.message);
+      return null;
+    }
+ 
+    console.log('✅ Bus creado exitosamente:', bus.placa);
+    return bus;
+  } catch (error) {
+    console.error('❌ Error en crearBus:', error);
+    return null;
+  }
+}
+
  /**
  * Obtener lista de OTs de una empresa
  *
@@ -538,11 +598,13 @@ export async function actualizarEstadoOT(
  * const trabajos = await obtenerTrabajos();
  * console.log(`${trabajos.length} trabajos disponibles`);
  */
-export async function obtenerTrabajos(): Promise<any[]> {
+export async function obtenerTrabajos(empresaId: number): Promise<any[]> {
   try {
     const { data, error } = await supabase
       .from('trabajos')
       .select('*')
+      .eq('empresa_id', empresaId)
+      .eq('activo', true)
       .order('nombre', { ascending: true });
  
     if (error) {
@@ -557,6 +619,55 @@ export async function obtenerTrabajos(): Promise<any[]> {
   }
 }
 
+/**
+ * Crear un nuevo trabajo
+ *
+ * @param trabajo - Datos del trabajo
+ * @returns Trabajo creado
+ *
+ * @example
+ * const trabajo = await crearTrabajo({
+ *   empresa_id: 1,
+ *   nombre: 'Cambio de aceite',
+ *   descripcion: 'Cambio de aceite del motor',
+ *   entraCronograma: true,
+ *   intervaloDias: 90,
+ *   intervaloKm: null
+ * });
+ */
+export async function crearTrabajo(datos: {
+  empresa_id: number;
+  nombre: string;
+  descripcion?: string;
+  categoria?: string;
+}): Promise<any | null> {
+  try {
+    console.log('🔧 Creando nuevo trabajo:', datos.nombre);
+ 
+    const { data: trabajo, error } = await supabase
+      .from('trabajos')
+      .insert({
+        empresa_id: datos.empresa_id,
+        nombre: datos.nombre,
+        descripcion: datos.descripcion || null,
+        categoria: datos.categoria || null,
+        activo: true,
+      })
+      .select()
+      .single();
+ 
+    if (error) {
+      console.error('❌ Error creando trabajo:', error.message);
+      return null;
+    }
+ 
+    console.log('✅ Trabajo creado exitosamente:', trabajo.nombre);
+    return trabajo;
+  } catch (error) {
+    console.error('❌ Error en crearTrabajo:', error);
+    return null;
+  }
+}
 
 /**
  * Obtener detalle completo de una OT con trabajos
@@ -594,6 +705,38 @@ export async function obtenerOTCompleta(otId: number): Promise<any | null> {
   } catch (error) {
     console.error('Error obteniendo OT completa:', error);
     return null;
+  }
+}
+
+
+/**
+ * Eliminar un trabajo (soft delete)
+ *
+ * @param trabajoId - ID del trabajo
+ * @returns true si se eliminó correctamente
+ *
+ * @example
+ * const eliminado = await eliminarTrabajo(1);
+ */
+export async function eliminarTrabajo(trabajoId: number): Promise<boolean> {
+  try {
+    console.log('🗑️ Eliminando trabajo:', trabajoId);
+ 
+    const { error } = await supabase
+      .from('trabajos')
+      .update({ activo: false })
+      .eq('id', trabajoId);
+ 
+    if (error) {
+      console.error('❌ Error eliminando trabajo:', error.message);
+      return false;
+    }
+ 
+    console.log('✅ Trabajo eliminado exitosamente');
+    return true;
+  } catch (error) {
+    console.error('❌ Error en eliminarTrabajo:', error);
+    return false;
   }
 }
 
