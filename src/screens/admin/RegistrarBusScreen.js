@@ -1,5 +1,5 @@
 // src/screens/admin/RegistrarBusScreen.js
-
+ 
 import React, { useState } from 'react';
 import {
   View,
@@ -14,10 +14,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import useAuthStore from '../../store/authStore';
-import { crearBus } from '../../lib/cronograma';
-
+import { useCrearBus } from '../../hooks/useBuses';
+ 
 export default function RegistrarBusScreen({ navigation }) {
-  const { empresa } = useAuthStore();
+  const empresaId = useAuthStore((state) => state.empresa?.id);
 
   // Estados del formulario
   const [placa, setPlaca] = useState('');
@@ -27,8 +27,10 @@ export default function RegistrarBusScreen({ navigation }) {
   const [anio, setAnio] = useState('');
   const [color, setColor] = useState('');
   const [kilometraje, setKilometraje] = useState('');
-  const [loading, setLoading] = useState(false);
 
+  // React Query mutation
+  const crearBusMutation = useCrearBus();
+ 
   // Validar y guardar
   const handleGuardar = async () => {
     // Validaciones
@@ -36,19 +38,19 @@ export default function RegistrarBusScreen({ navigation }) {
       Alert.alert('Error', 'La placa es obligatoria');
       return;
     }
-
+ 
     // Validar formato de placa (puede ser ABC-123 o ABC1234)
     if (placa.trim().length < 6) {
       Alert.alert('Error', 'La placa debe tener al menos 6 caracteres');
       return;
     }
-
+ 
     // Año debe ser válido si se proporciona
     if (anio && (parseInt(anio) < 1900 || parseInt(anio) > new Date().getFullYear() + 1)) {
       Alert.alert('Error', 'El año debe estar entre 1900 y ' + (new Date().getFullYear() + 1));
       return;
     }
-
+ 
     // Confirmar guardado
     Alert.alert(
       'Confirmar Registro',
@@ -62,12 +64,11 @@ export default function RegistrarBusScreen({ navigation }) {
       ]
     );
   };
-
+ 
   const guardarBus = async () => {
-    setLoading(true);
     try {
-      const bus = await crearBus({
-        empresa_id: empresa.id,
+      const bus = await crearBusMutation.mutateAsync({
+        empresa_id: empresaId,
         placa: placa.trim().toUpperCase(),
         vin: vin.trim() || null, // VIN es opcional
         marca: marca.trim() || null,
@@ -76,13 +77,12 @@ export default function RegistrarBusScreen({ navigation }) {
         color: color.trim() || null,
         kilometraje_actual: kilometraje ? parseInt(kilometraje) : 0,
       });
-
+ 
       if (!bus) {
         Alert.alert('Error', 'No se pudo registrar el bus. Intenta nuevamente.');
-        setLoading(false);
         return;
       }
-
+ 
       // Mostrar éxito
       Alert.alert(
         '✅ Bus Registrado',
@@ -96,11 +96,9 @@ export default function RegistrarBusScreen({ navigation }) {
     } catch (error) {
       console.error('Error guardando bus:', error);
       Alert.alert('Error', 'Ocurrió un error al guardar el bus. Revisa la consola.');
-    } finally {
-      setLoading(false);
     }
   };
-
+ 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
@@ -114,7 +112,7 @@ export default function RegistrarBusScreen({ navigation }) {
         <Text style={styles.headerTitle}>REGISTRAR BUS</Text>
         <View style={{ width: 40 }} />
       </View>
-
+ 
       <ScrollView
         style={styles.scrollContent}
         contentContainerStyle={styles.content}
@@ -127,10 +125,10 @@ export default function RegistrarBusScreen({ navigation }) {
             Solo la placa es obligatoria. Los demás campos son opcionales.
           </Text>
         </View>
-
+ 
         {/* SECCIÓN: DATOS DEL VEHÍCULO */}
         <Text style={styles.sectionTitle}>DATOS DEL VEHÍCULO</Text>
-
+ 
         {/* Placa */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>PLACA *</Text>
@@ -152,7 +150,7 @@ export default function RegistrarBusScreen({ navigation }) {
             Ingresa la placa del bus
           </Text>
         </View>
-
+ 
         {/* VIN */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>VIN (Opcional)</Text>
@@ -174,7 +172,7 @@ export default function RegistrarBusScreen({ navigation }) {
             {vin.length > 0 ? `${vin.length}/17 caracteres` : 'VIN de 17 caracteres (opcional)'}
           </Text>
         </View>
-
+ 
         {/* Marca */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>MARCA (Opcional)</Text>
@@ -192,7 +190,7 @@ export default function RegistrarBusScreen({ navigation }) {
             />
           </View>
         </View>
-
+ 
         {/* Modelo */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>MODELO (Opcional)</Text>
@@ -210,7 +208,7 @@ export default function RegistrarBusScreen({ navigation }) {
             />
           </View>
         </View>
-
+ 
         {/* Año */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>AÑO (Opcional)</Text>
@@ -232,7 +230,7 @@ export default function RegistrarBusScreen({ navigation }) {
             Año de fabricación del bus
           </Text>
         </View>
-
+ 
         {/* Color */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>COLOR (Opcional)</Text>
@@ -250,7 +248,7 @@ export default function RegistrarBusScreen({ navigation }) {
             />
           </View>
         </View>
-
+ 
         {/* Kilometraje */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>KILOMETRAJE ACTUAL (Opcional)</Text>
@@ -271,10 +269,10 @@ export default function RegistrarBusScreen({ navigation }) {
             {kilometraje ? `${parseInt(kilometraje).toLocaleString()} km` : 'Si no se ingresa, se iniciará en 0 km'}
           </Text>
         </View>
-
+ 
         {/* Vista Previa */}
         <Text style={styles.sectionTitle}>VISTA PREVIA</Text>
-
+ 
         <View style={styles.previewCard}>
           <View style={styles.previewHeader}>
             <View style={styles.previewIconBox}>
@@ -309,29 +307,29 @@ export default function RegistrarBusScreen({ navigation }) {
             </View>
           </View>
         </View>
-
+ 
         {/* Botón Guardar */}
         <TouchableOpacity
-          style={[styles.guardarButton, loading && styles.guardarButtonDisabled]}
+          style={[styles.guardarButton, crearBusMutation.isPending && styles.guardarButtonDisabled]}
           onPress={handleGuardar}
-          disabled={loading}
+          disabled={crearBusMutation.isPending}
         >
           <Ionicons
-            name={loading ? 'hourglass' : 'checkmark-circle'}
+            name={crearBusMutation.isPending ? 'hourglass' : 'checkmark-circle'}
             size={24}
             color={COLORS.text}
           />
           <Text style={styles.guardarButtonText}>
-            {loading ? 'REGISTRANDO...' : 'REGISTRAR BUS'}
+            {crearBusMutation.isPending ? 'REGISTRANDO...' : 'REGISTRAR BUS'}
           </Text>
         </TouchableOpacity>
-
+ 
         <View style={{ height: 30 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
+ 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {

@@ -15,24 +15,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import useAuthStore from '../../store/authStore';
-import { crearTrabajo } from '../../lib/cronograma';
-
+import { useCrearTrabajo } from '../../hooks/useTrabajos';
+ 
 export default function CrearTrabajoScreen({ navigation }) {
-  const { empresa } = useAuthStore();
+  const empresaId = useAuthStore((state) => state.empresa?.id);
   const [nombre, setNombre] = useState('');
   const [entraCronograma, setEntraCronograma] = useState(false);
   const [intervaloDias, setIntervaloDias] = useState('');
   const [intervaloKm, setIntervaloKm] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const handleGuardar = async () => {
+  // React Query mutation
+  const crearMutation = useCrearTrabajo();
+
+const handleGuardar = async () => {
     // Validaciones
     if (!nombre.trim()) {
       Alert.alert('Error', 'El nombre del trabajo es obligatorio');
       return;
     }
 
-    if (!empresa?.id) {
+    if (!empresaId) {
       Alert.alert('Error', 'No se pudo identificar tu empresa');
       return;
     }
@@ -45,22 +47,19 @@ export default function CrearTrabajoScreen({ navigation }) {
       }
     }
 
-    // Guardar en Supabase
-    setLoading(true);
+    // Guardar en Supabase usando React Query mutation
     try {
-      const trabajo = await crearTrabajo({
-        empresa_id: empresa.id,
+      const trabajo = await crearMutation.mutateAsync({
+        empresa_id: empresaId,
         nombre: nombre.trim(),
         categoria: entraCronograma ? 'cronograma' : 'historial',
       });
 
       if (!trabajo) {
         Alert.alert('Error', 'No se pudo crear el trabajo. Intenta nuevamente.');
-        setLoading(false);
         return;
       }
 
-      setLoading(false);
       Alert.alert(
         '✅ Trabajo Creado',
         `Trabajo "${nombre}" registrado correctamente en tu empresa.\n\n` +
@@ -71,7 +70,6 @@ export default function CrearTrabajoScreen({ navigation }) {
     } catch (error) {
       console.error('Error guardando trabajo:', error);
       Alert.alert('Error', 'Ocurrió un error al guardar el trabajo');
-      setLoading(false);
     }
   };
 
@@ -181,7 +179,7 @@ export default function CrearTrabajoScreen({ navigation }) {
               </Text>
             </View>
 
-            {/* Intervalo Km - OPCIONAL */}
+             {/* Intervalo Km - OPCIONAL */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>INTERVALO EN KM (Opcional)</Text>
               <View style={styles.inputContainer}>
@@ -220,17 +218,17 @@ export default function CrearTrabajoScreen({ navigation }) {
 
         {/* Botón Guardar */}
         <TouchableOpacity
-          style={[styles.guardarButton, loading && styles.guardarButtonDisabled]}
+          style={[styles.guardarButton, crearMutation.isPending && styles.guardarButtonDisabled]}
           onPress={handleGuardar}
-          disabled={loading}
+          disabled={crearMutation.isPending}
         >
           <Ionicons
-            name={loading ? 'hourglass' : 'checkmark-circle'}
+            name={crearMutation.isPending ? 'hourglass' : 'checkmark-circle'}
             size={24}
             color={COLORS.text}
           />
           <Text style={styles.guardarButtonText}>
-            {loading ? 'CREANDO...' : 'CREAR TRABAJO'}
+            {crearMutation.isPending ? 'CREANDO...' : 'CREAR TRABAJO'}
           </Text>
         </TouchableOpacity>
 

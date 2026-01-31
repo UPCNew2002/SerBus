@@ -496,42 +496,18 @@ export async function desactivarEmpresa(empresaId: number): Promise<boolean> {
   return actualizarEmpresa(empresaId, { activo: false });
 }
 
-// ───────────────────────────────────────────────────────
-// ACTUALIZAR TEMA DE EMPRESA
-// ───────────────────────────────────────────────────────
-
-export interface TemaEmpresa {
-  primary: string;
-  secondary: string;
-  accent: string;
-  background: string;
-  backgroundLight: string;
-  card: string;
-  text: string;
-  textLight: string;
-  textMuted: string;
-  border: string;
-}
-
 /**
  * Actualiza el tema visual de una empresa
- *
  * @param empresaId - ID de la empresa
  * @param tema - Objeto con los colores del tema
  * @returns true si se actualizó correctamente
  *
  * @example
- * const tema = {
- *   primary: '#dc2626',
- *   secondary: '#0a0a0a',
- *   accent: '#fbbf24',
- *   ...
- * };
- * const actualizado = await actualizarTemaEmpresa(1, tema);
+ * const exito = await actualizarTemaEmpresa(1, { primary: '#dc2626', secondary: '#0a0a0a' });
  */
 export async function actualizarTemaEmpresa(
   empresaId: number,
-  tema: TemaEmpresa
+  tema: Record<string, string>
 ): Promise<boolean> {
   try {
     const { error } = await supabase
@@ -540,14 +516,13 @@ export async function actualizarTemaEmpresa(
       .eq('id', empresaId);
 
     if (error) {
-      console.error('❌ Error actualizando tema:', error.message);
+      console.error('Error actualizando tema de empresa:', error);
       return false;
     }
 
-    console.log('✅ Tema de empresa actualizado');
     return true;
   } catch (error) {
-    console.error('❌ Error en actualizarTemaEmpresa:', error);
+    console.error('Error al actualizar tema de empresa:', error);
     return false;
   }
 }

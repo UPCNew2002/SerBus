@@ -1,26 +1,48 @@
 // src/screens/system/SystemHomeScreen.js
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColores } from '../../hooks/useColores';
 import useAuthStore from '../../store/authStore';
-import useEmpresasStore from '../../store/empresasStore';
-import useUsuariosStore from '../../store/usuariosStore';
+import { obtenerTodasLasEmpresas } from '../../lib/empresas';
+import { supabase } from '../../lib/supabase';
 
 export default function SystemHomeScreen({ navigation }) {
   const { user, logout } = useAuthStore();
-  const { empresas } = useEmpresasStore();
-  const { usuarios } = useUsuariosStore();
   const COLORS = useColores();
+  const [cargando, setCargando] = useState(true);
+  const [empresas, setEmpresas] = useState([]);
+  const [trabajadores, setTrabajadores] = useState([]);
+
+  useEffect(() => {
+    cargarEstadisticas();
+  }, []);
+
+  const cargarEstadisticas = async () => {
+    setCargando(true);
+    
+    // Obtener empresas desde Supabase
+    const empresasData = await obtenerTodasLasEmpresas();
+    setEmpresas(empresasData);
+
+    // Obtener trabajadores desde Supabase
+    const { data: trabajadoresData } = await supabase
+      .from('perfiles')
+      .select('*')
+      .eq('rol', 'trabajador');
+    
+    setTrabajadores(trabajadoresData || []);
+    setCargando(false);
+  };
 
   // Estadísticas generales
   const totalEmpresas = empresas.length;
   const empresasActivas = empresas.filter(e => e.activo).length;
   const totalAdmins = empresas.length; // Cada empresa tiene 1 admin
-  const totalTrabajadores = usuarios.length;
-  const trabajadoresActivos = usuarios.filter(u => u.activo).length;
+  const totalTrabajadores = trabajadores.length;
+  const trabajadoresActivos = trabajadores.filter(u => u.activo).length;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
@@ -36,6 +58,17 @@ export default function SystemHomeScreen({ navigation }) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+
+                {cargando ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={[styles.loadingText, { color: COLORS.textMuted }]}>
+              Cargando estadísticas...
+            </Text>
+          </View>
+        ) : (
+          <>
+
         <Text style={[styles.welcomeText, { color: COLORS.textLight }]}>
           Bienvenido, {user?.nombre || 'Super Admin'}
         </Text>
@@ -156,6 +189,8 @@ export default function SystemHomeScreen({ navigation }) {
         </TouchableOpacity>
 
         <View style={{ height: 30 }} />
+        </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -236,6 +271,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
+  },
+    logoutText: {
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 14,
+    marginTop: 15,
   },
   menuIconBox: {
     width: 45,

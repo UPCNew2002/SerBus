@@ -1,6 +1,6 @@
 // src/screens/admin/ListaBusesScreen.js
- 
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,46 +14,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import useAuthStore from '../../store/authStore';
-import { obtenerBusesEmpresa } from '../../lib/cronograma';
- 
+import { useBuses } from '../../hooks/useBuses';
+
 export default function ListaBusesScreen({ navigation }) {
-  const [buses, setBuses] = useState([]);
-  const [busesFiltered, setBusesFiltered] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const { empresa } = useAuthStore();
- 
-  useEffect(() => {
-    cargarBuses();
-  }, []);
- 
-  useEffect(() => {
+  const empresaId = useAuthStore((state) => state.empresa?.id);
+
+  // React Query hook
+  const { data: buses = [], isLoading, refetch } = useBuses(empresaId);
+
+  // Filter buses based on search query using useMemo for performance
+  const busesFiltered = useMemo(() => {
     if (searchQuery.trim() === '') {
-      setBusesFiltered(buses);
-    } else {
-      const filtered = buses.filter(
-        (bus) =>
-          bus.placa.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          bus.marca.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          bus.modelo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          bus.vin.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setBusesFiltered(filtered);
+      return buses;
     }
+    return buses.filter(
+      (bus) =>
+        bus.placa?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        bus.marca?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        bus.modelo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        bus.vin?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [searchQuery, buses]);
- 
-  async function cargarBuses() {
-    setLoading(true);
-    try {
-      const data = await obtenerBusesEmpresa(empresa.id);
-      setBuses(data || []);
-      setBusesFiltered(data || []);
-    } catch (error) {
-      console.error('Error cargando buses:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
  
   function calcularUrgencia(km) {
     const restantes = 10000 - (km % 10000);
@@ -152,7 +134,7 @@ export default function ListaBusesScreen({ navigation }) {
         renderItem={renderBus}
         contentContainerStyle={styles.listContainer}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={cargarBuses} colors={[COLORS.primary]} />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
