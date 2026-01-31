@@ -1,6 +1,6 @@
 // src/screens/admin/TrabajosListScreen.js
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -14,28 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import useAuthStore from '../../store/authStore';
-import { obtenerTrabajos } from '../../lib/cronograma';
- 
+import { useTrabajos, useEliminarTrabajo } from '../../hooks/useTrabajos';
+
 export default function TrabajosListScreen({ navigation }) {
-  const { empresa } = useAuthStore();
-  const [trabajos, setTrabajos] = useState([]);
-  const [loading, setLoading] = useState(true);
- 
-  useEffect(() => {
-    cargarTrabajos();
-  }, []);
- 
-  async function cargarTrabajos() {
-    setLoading(true);
-    try {
-      const trabajosData = await obtenerTrabajos(empresa.id);
-      setTrabajos(trabajosData || []);
-    } catch (error) {
-      console.error('Error cargando trabajos:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const empresaId = useAuthStore((state) => state.empresa?.id);
+
+  // React Query hooks
+  const { data: trabajos = [], isLoading, refetch } = useTrabajos(empresaId);
+  const eliminarMutation = useEliminarTrabajo();
 
   const handleEliminar = (trabajo) => {
     Alert.alert(
@@ -47,11 +33,14 @@ export default function TrabajosListScreen({ navigation }) {
           text: 'Eliminar',
           style: 'destructive',
           onPress: async () => {
-            const eliminado = await eliminarTrabajo(trabajo.id);
-            if (eliminado) {
+            try {
+              await eliminarMutation.mutateAsync({
+                trabajoId: trabajo.id,
+                empresaId
+              });
               Alert.alert('Éxito', `Trabajo "${trabajo.nombre}" eliminado`);
-              cargarTrabajos(); // Recargar lista
-            } else {
+            } catch (error) {
+              console.error('Error eliminando trabajo:', error);
               Alert.alert('Error', 'No se pudo eliminar el trabajo');
             }
           },
@@ -172,8 +161,8 @@ export default function TrabajosListScreen({ navigation }) {
         contentContainerStyle={styles.lista}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={cargarTrabajos}
+            refreshing={isLoading}
+            onRefresh={refetch}
             colors={[COLORS.primary]}
           />
         }

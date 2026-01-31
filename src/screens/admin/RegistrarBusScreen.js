@@ -14,11 +14,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import useAuthStore from '../../store/authStore';
-import { crearBus } from '../../lib/cronograma';
+import { useCrearBus } from '../../hooks/useBuses';
  
 export default function RegistrarBusScreen({ navigation }) {
-  const { empresa } = useAuthStore();
- 
+  const empresaId = useAuthStore((state) => state.empresa?.id);
+
   // Estados del formulario
   const [placa, setPlaca] = useState('');
   const [vin, setVin] = useState('');
@@ -27,7 +27,9 @@ export default function RegistrarBusScreen({ navigation }) {
   const [anio, setAnio] = useState('');
   const [color, setColor] = useState('');
   const [kilometraje, setKilometraje] = useState('');
-  const [loading, setLoading] = useState(false);
+
+  // React Query mutation
+  const crearBusMutation = useCrearBus();
  
   // Validar y guardar
   const handleGuardar = async () => {
@@ -64,10 +66,9 @@ export default function RegistrarBusScreen({ navigation }) {
   };
  
   const guardarBus = async () => {
-    setLoading(true);
     try {
-      const bus = await crearBus({
-        empresa_id: empresa.id,
+      const bus = await crearBusMutation.mutateAsync({
+        empresa_id: empresaId,
         placa: placa.trim().toUpperCase(),
         vin: vin.trim() || null, // VIN es opcional
         marca: marca.trim() || null,
@@ -79,7 +80,6 @@ export default function RegistrarBusScreen({ navigation }) {
  
       if (!bus) {
         Alert.alert('Error', 'No se pudo registrar el bus. Intenta nuevamente.');
-        setLoading(false);
         return;
       }
  
@@ -96,8 +96,6 @@ export default function RegistrarBusScreen({ navigation }) {
     } catch (error) {
       console.error('Error guardando bus:', error);
       Alert.alert('Error', 'Ocurrió un error al guardar el bus. Revisa la consola.');
-    } finally {
-      setLoading(false);
     }
   };
  
@@ -312,17 +310,17 @@ export default function RegistrarBusScreen({ navigation }) {
  
         {/* Botón Guardar */}
         <TouchableOpacity
-          style={[styles.guardarButton, loading && styles.guardarButtonDisabled]}
+          style={[styles.guardarButton, crearBusMutation.isPending && styles.guardarButtonDisabled]}
           onPress={handleGuardar}
-          disabled={loading}
+          disabled={crearBusMutation.isPending}
         >
           <Ionicons
-            name={loading ? 'hourglass' : 'checkmark-circle'}
+            name={crearBusMutation.isPending ? 'hourglass' : 'checkmark-circle'}
             size={24}
             color={COLORS.text}
           />
           <Text style={styles.guardarButtonText}>
-            {loading ? 'REGISTRANDO...' : 'REGISTRAR BUS'}
+            {crearBusMutation.isPending ? 'REGISTRANDO...' : 'REGISTRAR BUS'}
           </Text>
         </TouchableOpacity>
  

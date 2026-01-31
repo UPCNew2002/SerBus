@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import useTemaStore from '../../store/temaStore';
 import useAuthStore from '../../store/authStore';
-import { actualizarTemaEmpresa } from '../../lib/empresas';
+import { useActualizarTema } from '../../hooks/useEmpresa';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +25,9 @@ export default function ConfigurarColoresScreen({ navigation }) {
   const colores = useTemaStore((state) => state.colores);
   const cargarTema = useTemaStore((state) => state.cargarTema);
   const empresaId = useAuthStore((state) => state.empresa?.id);
+
+  // React Query mutation
+  const actualizarTemaMutation = useActualizarTema();
 
   // Estados para cada color
   const [primary, setPrimary] = useState(colores.primary);
@@ -35,7 +38,6 @@ export default function ConfigurarColoresScreen({ navigation }) {
 
   const [modoOscuro, setModoOscuro] = useState(true);
   const [colorActivo, setColorActivo] = useState('primary');
-  const [loading, setLoading] = useState(false);
   const [mostrarPicker, setMostrarPicker] = useState(true);
   const [categoriaActiva, setCategoriaActiva] = useState('Todos');
 
@@ -240,21 +242,25 @@ export default function ConfigurarColoresScreen({ navigation }) {
   const handleGuardar = async () => {
     const nuevoTema = { primary, accent, background, card, text };
 
-    setLoading(true);
+    try {
+      const exito = await actualizarTemaMutation.mutateAsync({
+        empresaId,
+        tema: nuevoTema
+      });
 
-    const exito = await actualizarTemaEmpresa(empresaId, nuevoTema);
-
-    setLoading(false);
-
-    if (exito) {
-      cargarTema(nuevoTema);
-      Alert.alert(
-        '✅ ¡Colores Guardados!',
-        'Los nuevos colores se aplicaron correctamente.\n\nTodos los usuarios de tu empresa verán estos cambios.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
-    } else {
-      Alert.alert('❌ Error', 'No se pudo guardar el tema. Intenta nuevamente.');
+      if (exito) {
+        cargarTema(nuevoTema);
+        Alert.alert(
+          '✅ ¡Colores Guardados!',
+          'Los nuevos colores se aplicaron correctamente.\n\nTodos los usuarios de tu empresa verán estos cambios.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert('❌ Error', 'No se pudo guardar el tema. Intenta nuevamente.');
+      }
+    } catch (error) {
+      console.error('Error guardando tema:', error);
+      Alert.alert('❌ Error', 'Ocurrió un error al guardar el tema. Intenta nuevamente.');
     }
   };
 
@@ -585,13 +591,13 @@ export default function ConfigurarColoresScreen({ navigation }) {
 
         {/* Botón Guardar */}
         <TouchableOpacity
-          style={[styles.guardarButton, { backgroundColor: primary }, loading && styles.guardarButtonDisabled]}
+          style={[styles.guardarButton, { backgroundColor: primary }, actualizarTemaMutation.isPending && styles.guardarButtonDisabled]}
           onPress={handleGuardar}
-          disabled={loading}
+          disabled={actualizarTemaMutation.isPending}
         >
-          <Ionicons name={loading ? 'hourglass' : 'save'} size={24} color={text} />
+          <Ionicons name={actualizarTemaMutation.isPending ? 'hourglass' : 'save'} size={24} color={text} />
           <Text style={[styles.guardarButtonText, { color: text }]}>
-            {loading ? 'GUARDANDO EN SUPABASE...' : '💾 GUARDAR COLORES'}
+            {actualizarTemaMutation.isPending ? 'GUARDANDO EN SUPABASE...' : '💾 GUARDAR COLORES'}
           </Text>
         </TouchableOpacity>
 

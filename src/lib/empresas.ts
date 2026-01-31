@@ -495,3 +495,34 @@ export async function actualizarDatosEmpresa(
 export async function desactivarEmpresa(empresaId: number): Promise<boolean> {
   return actualizarEmpresa(empresaId, { activo: false });
 }
+
+/**
+ * Actualiza el tema visual de una empresa
+ * @param empresaId - ID de la empresa
+ * @param tema - Objeto con los colores del tema
+ * @returns true si se actualizó correctamente
+ *
+ * @example
+ * const exito = await actualizarTemaEmpresa(1, { primary: '#dc2626', secondary: '#0a0a0a' });
+ */
+export async function actualizarTemaEmpresa(
+  empresaId: number,
+  tema: Record<string, string>
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('empresas')
+      .update({ tema })
+      .eq('id', empresaId);
+
+    if (error) {
+      console.error('Error actualizando tema de empresa:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error al actualizar tema de empresa:', error);
+    return false;
+  }
+}
