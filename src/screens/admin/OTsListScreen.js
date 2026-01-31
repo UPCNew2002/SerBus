@@ -14,23 +14,23 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import useOTsStore from '../../store/otsStore';
+import { useOTs } from '../../hooks/useOTs';
 import useAuthStore from '../../store/authStore';
 import { obtenerOTsEmpresa } from '../../lib/cronograma';
  
 export default function OTsListScreen({ navigation }) {
-  const { ots: otsLocal } = useOTsStore();
-  const { empresa } = useAuthStore();
+const { ots: otsLocal } = useOTsStore();
+const empresaId = useAuthStore((state) => state.empresa?.id);
  
-  // Estados
-  const [otsSupabase, setOtsSupabase] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [busqueda, setBusqueda] = useState('');
-  const [showFiltros, setShowFiltros] = useState(false);
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
-  const [ordenarPor, setOrdenarPor] = useState('fecha_desc');
- 
+// React Query hook
+const { data: otsSupabase = [], isLoading, refetch } = useOTs(empresaId);
+
+// Estados (mantener los de filtros)
+const [busqueda, setBusqueda] = useState('');
+const [showFiltros, setShowFiltros] = useState(false);
+const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
+const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
+const [ordenarPor, setOrdenarPor] = useState('fecha_desc');
   useEffect(() => {
     cargarOTs();
   }, []);
@@ -436,7 +436,7 @@ export default function OTsListScreen({ navigation }) {
         contentContainerStyle={styles.lista}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={cargarOTs} colors={[COLORS.primary]} />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
