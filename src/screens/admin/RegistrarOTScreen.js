@@ -19,6 +19,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../../constants/colors';
 import useOTsStore from '../../store/otsStore';
 import useAuthStore from '../../store/authStore';
+import { useBuses } from '../../hooks/useBuses';
+import { useTrabajos } from '../../hooks/useTrabajos';
+import { useCrearOT } from '../../hooks/useOTs';
 import { generarNumeroOT, obtenerBusesEmpresa, crearOT, actualizarKilometraje, obtenerTrabajos } from '../../lib/cronograma';
 
 export default function RegistrarOTScreen({ navigation }) {
