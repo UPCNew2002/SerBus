@@ -1,5 +1,5 @@
 // src/screens/admin/OTsListScreen.js
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -25,12 +25,12 @@ const empresaId = useAuthStore((state) => state.empresa?.id);
 // React Query hook
 const { data: otsSupabase = [], isLoading, refetch } = useOTs(empresaId);
 
-// Estados (mantener los de filtros)
-const [busqueda, setBusqueda] = useState('');
-const [showFiltros, setShowFiltros] = useState(false);
-const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
-const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
-const [ordenarPor, setOrdenarPor] = useState('fecha_desc');
+  // Estados de filtros
+  const [busqueda, setBusqueda] = useState('');
+  const [showFiltros, setShowFiltros] = useState(false);
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
+  const [ordenarPor, setOrdenarPor] = useState('fecha_desc');
   useEffect(() => {
     cargarOTs();
   }, []);
