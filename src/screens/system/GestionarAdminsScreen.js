@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColores } from '../../hooks/useColores';
 import { obtenerTodasLasEmpresas } from '../../lib/empresas';
+import { enviarEmailRecuperacion } from '../../lib/usuarios';
 
 export default function GestionarAdminsScreen({ navigation }) {
   const COLORS = useColores();
@@ -41,11 +42,43 @@ export default function GestionarAdminsScreen({ navigation }) {
       e.ruc.includes(busqueda)
   );
 
-  const handleResetPassword = (empresa) => {
+  const handleResetPassword = async (empresa) => {
+    // Verificar que tengamos el email del admin
+    if (!empresa.adminEmail) {
+      Alert.alert(
+        '❌ Error',
+        `No se pudo obtener el email del administrador.\n\nUsuario: ${empresa.adminUsuario}\n\nPor favor, contacta al administrador del sistema.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       '🔐 Resetear Contraseña',
-      `Esta funcionalidad requiere actualizar la contraseña en Supabase Auth.\n\nPor ahora, contacta al administrador del sistema para resetear la contraseña del usuario: ${empresa.adminUsuario}`,
-      [{ text: 'Entendido' }]
+      `Se enviará un email de recuperación a:\n${empresa.adminEmail}\n\nUsuario: ${empresa.adminUsuario}\n\n¿Continuar?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Enviar',
+          style: 'default',
+          onPress: async () => {
+            const exito = await enviarEmailRecuperacion(empresa.adminEmail);
+            if (exito) {
+              Alert.alert(
+                '✅ Email Enviado',
+                `Se envió un email de recuperación a:\n${empresa.adminEmail}\n\nEl administrador debe revisar su correo y seguir las instrucciones para crear una nueva contraseña.`,
+                [{ text: 'OK' }]
+              );
+            } else {
+              Alert.alert(
+                '❌ Error',
+                'No se pudo enviar el email de recuperación. Verifica la configuración de email en Supabase.',
+                [{ text: 'OK' }]
+              );
+            }
+          },
+        },
+      ]
     );
   };
 
@@ -149,7 +182,7 @@ export default function GestionarAdminsScreen({ navigation }) {
       <View style={[styles.infoBox, { backgroundColor: COLORS.card, borderLeftColor: COLORS.statusWarning, borderColor: COLORS.border }]}>
         <Ionicons name="information-circle" size={20} color={COLORS.statusWarning} />
         <Text style={[styles.infoText, { color: COLORS.textLight }]}>
-          Al resetear una contraseña, se generará la clave temporal "reset123"
+          Al resetear una contraseña, se enviará un email de recuperación al administrador
         </Text>
       </View>
 

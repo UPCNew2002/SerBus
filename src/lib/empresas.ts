@@ -304,6 +304,8 @@ export interface EmpresaConAdmin {
   created_at: string;
   adminUsuario: string;
   adminNombre: string;
+  adminEmail?: string; // Email del admin para recuperación de contraseña
+  adminId?: string; // ID del perfil admin
 }
  
 /**
@@ -334,11 +336,23 @@ export async function obtenerTodasLasEmpresas(): Promise<EmpresaConAdmin[]> {
       // Buscar el perfil del admin de esta empresa
       const { data: admin } = await supabase
         .from('perfiles')
-        .select('username, nombre')
+        .select('id, username, nombre')
         .eq('empresa_id', empresa.id)
         .eq('rol', 'admin')
         .single();
- 
+
+      // Construir email del admin (basado en username)
+      // Mapeo para usuarios conocidos
+      const emailMap: { [key: string]: string } = {
+        'jperez': 'jperez@gmail.com',
+        'mgarcia': 'mgarcia@gmail.com',
+        'superadmin': 'superadmin@gmail.com',
+      };
+
+      const adminEmail = admin?.username
+        ? (emailMap[admin.username] || `${admin.username}@gmail.com`)
+        : undefined;
+
       empresasConAdmin.push({
         id: empresa.id,
         nombre: empresa.nombre,
@@ -347,6 +361,8 @@ export async function obtenerTodasLasEmpresas(): Promise<EmpresaConAdmin[]> {
         created_at: empresa.created_at,
         adminUsuario: admin?.username || 'Sin admin',
         adminNombre: admin?.nombre || 'Sin nombre',
+        adminEmail: adminEmail,
+        adminId: admin?.id,
       });
     }
  

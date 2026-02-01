@@ -481,3 +481,27 @@ export async function cambiarPassword(
     return false;
   }
 }
+
+/**
+ * Enviar email de recuperación de contraseña (para superadmin resetear password de admin)
+ * @param email - Email del usuario admin
+ * @returns boolean indicando éxito
+ */
+export async function enviarEmailRecuperacion(email: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://tuapp.com/reset-password', // Puedes cambiar esto
+    });
+
+    if (error) {
+      console.error('❌ Error enviando email de recuperación:', error.message);
+      return false;
+    }
+
+    console.log('✅ Email de recuperación enviado a:', email);
+    return true;
+  } catch (error) {
+    console.error('❌ Error en enviarEmailRecuperacion:', error);
+    return false;
+  }
+}
