@@ -1,5 +1,5 @@
 // src/screens/admin/OTsListScreen.js
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,36 +16,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import useOTsStore from '../../store/otsStore';
 import useAuthStore from '../../store/authStore';
-import { obtenerOTsEmpresa } from '../../lib/cronograma';
- 
+import { useOTs } from '../../hooks/useOTs';
+
 export default function OTsListScreen({ navigation }) {
   const { ots: otsLocal } = useOTsStore();
-  const { empresa } = useAuthStore();
- 
-  // Estados
-  const [otsSupabase, setOtsSupabase] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const empresaId = useAuthStore((state) => state.empresa?.id);
+
+  // React Query hook
+  const { data: otsSupabase = [], isLoading, refetch } = useOTs(empresaId);
+
+  // Estados de filtros
   const [busqueda, setBusqueda] = useState('');
   const [showFiltros, setShowFiltros] = useState(false);
   const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
   const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
   const [ordenarPor, setOrdenarPor] = useState('fecha_desc');
- 
-  useEffect(() => {
-    cargarOTs();
-  }, []);
- 
-  async function cargarOTs() {
-    setLoading(true);
-    try {
-      const data = await obtenerOTsEmpresa(empresa.id);
-      setOtsSupabase(data || []);
-    } catch (error) {
-      console.error('Error cargando OTs:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
  
   // Combinar OTs de Supabase con OTs locales (por si registraron alguna sin guardar)
   const otsEmpresa = [
@@ -436,7 +421,7 @@ export default function OTsListScreen({ navigation }) {
         contentContainerStyle={styles.lista}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={cargarOTs} colors={[COLORS.primary]} />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={[COLORS.primary]} />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
