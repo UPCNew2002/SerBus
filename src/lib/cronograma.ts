@@ -416,7 +416,7 @@ export async function crearBus(datos: {
       .insert({
         empresa_id: datos.empresa_id,
         placa: datos.placa,
-        vin: datos.vin || null,
+        vin: datos.vin || '', // String vacío en lugar de null
         marca: datos.marca || null,
         modelo: datos.modelo || null,
         anio: datos.anio || null,
