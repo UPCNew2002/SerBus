@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // CONFIGURACIÓN SUPABASE
 // ───────────────────────────────────────────────────────
 
-const SUPABASE_URL = 'https://dgwqrbwxoupqbyfeuekb.supabase.co';
+export const SUPABASE_URL = 'https://dgwqrbwxoupqbyfeuekb.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnd3FyYnd4b3VwcWJ5ZmV1ZWtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MTM0NTMsImV4cCI6MjA4NDQ4OTQ1M30.UhDDY217uBKXWjOMmHbTySXxPoILhGeYjz-um_e7yG0';
 

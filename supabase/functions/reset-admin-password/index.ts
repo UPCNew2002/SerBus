@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Edge Function: reset-admin-password
 // Resetea la contraseña de un admin y genera una contraseña temporal
 

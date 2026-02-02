@@ -11,7 +11,7 @@
 //
 // ═══════════════════════════════════════════════════════
  
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL } from './supabase';
  
 // ───────────────────────────────────────────────────────
 // TIPOS
@@ -548,8 +548,7 @@ export async function resetearPasswordAdmin(
     }
 
     // Obtener URL del proyecto Supabase
-    const supabaseUrl = supabase.supabaseUrl;
-    const edgeFunctionUrl = `${supabaseUrl}/functions/v1/reset-admin-password`;
+    const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/reset-admin-password`;
 
     // Llamar a Edge Function
     const response = await fetch(edgeFunctionUrl, {
