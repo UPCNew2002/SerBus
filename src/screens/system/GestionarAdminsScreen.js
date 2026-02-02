@@ -10,12 +10,13 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
+  Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColores } from '../../hooks/useColores';
 import { obtenerTodasLasEmpresas } from '../../lib/empresas';
-import { enviarEmailRecuperacion } from '../../lib/usuarios';
+import { resetearPasswordAdmin } from '../../lib/usuarios';
 
 export default function GestionarAdminsScreen({ navigation }) {
   const COLORS = useColores();
@@ -43,11 +44,11 @@ export default function GestionarAdminsScreen({ navigation }) {
   );
 
   const handleResetPassword = async (empresa) => {
-    // Verificar que tengamos el email del admin
-    if (!empresa.adminEmail) {
+    // Verificar que tengamos el ID del admin
+    if (!empresa.adminId) {
       Alert.alert(
         '❌ Error',
-        `No se pudo obtener el email del administrador.\n\nUsuario: ${empresa.adminUsuario}\n\nPor favor, contacta al administrador del sistema.`,
+        `No se pudo obtener el ID del administrador.\n\nUsuario: ${empresa.adminUsuario}\n\nPor favor, contacta al administrador del sistema.`,
         [{ text: 'OK' }]
       );
       return;
@@ -55,24 +56,34 @@ export default function GestionarAdminsScreen({ navigation }) {
 
     Alert.alert(
       '🔐 Resetear Contraseña',
-      `Se enviará un email de recuperación a:\n${empresa.adminEmail}\n\nUsuario: ${empresa.adminUsuario}\n\n¿Continuar?`,
+      `Se generará una contraseña temporal para:\n\nEmpresa: ${empresa.nombre}\nAdmin: ${empresa.adminNombre}\nUsuario: ${empresa.adminUsuario}\n\n¿Continuar?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Enviar',
+          text: 'Generar',
           style: 'default',
           onPress: async () => {
-            const exito = await enviarEmailRecuperacion(empresa.adminEmail);
-            if (exito) {
+            const resultado = await resetearPasswordAdmin(empresa.adminId);
+            if (resultado.success) {
+              // Mostrar contraseña temporal en un Alert grande con opción de copiar
               Alert.alert(
-                '✅ Email Enviado',
-                `Se envió un email de recuperación a:\n${empresa.adminEmail}\n\nEl administrador debe revisar su correo y seguir las instrucciones para crear una nueva contraseña.`,
-                [{ text: 'OK' }]
+                '✅ Contraseña Temporal Generada',
+                `Usuario: ${resultado.username}\n\n🔑 CONTRASEÑA TEMPORAL:\n${resultado.passwordTemporal}\n\n⚠️ IMPORTANTE:\n• Copia esta contraseña y pásala al administrador\n• El admin deberá cambiarla en su primer inicio de sesión\n• Esta contraseña solo se muestra una vez`,
+                [
+                  {
+                    text: '📋 Copiar',
+                    onPress: () => {
+                      Clipboard.setString(resultado.passwordTemporal);
+                      Alert.alert('✅', 'Contraseña copiada al portapapeles');
+                    },
+                  },
+                  { text: 'Cerrar', style: 'cancel' }
+                ]
               );
             } else {
               Alert.alert(
                 '❌ Error',
-                'No se pudo enviar el email de recuperación. Verifica la configuración de email en Supabase.',
+                `No se pudo resetear la contraseña.\n\nError: ${resultado.error}`,
                 [{ text: 'OK' }]
               );
             }
@@ -182,7 +193,7 @@ export default function GestionarAdminsScreen({ navigation }) {
       <View style={[styles.infoBox, { backgroundColor: COLORS.card, borderLeftColor: COLORS.statusWarning, borderColor: COLORS.border }]}>
         <Ionicons name="information-circle" size={20} color={COLORS.statusWarning} />
         <Text style={[styles.infoText, { color: COLORS.textLight }]}>
-          Al resetear una contraseña, se enviará un email de recuperación al administrador
+          Al resetear una contraseña, se generará una contraseña temporal que deberás copiar y entregar al administrador
         </Text>
       </View>
 
