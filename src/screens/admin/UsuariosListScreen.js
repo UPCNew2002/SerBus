@@ -1,3 +1,5 @@
+// src/screens/admin/UsuariosListScreen.js
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -18,29 +20,29 @@ import {
   eliminarUsuario,
 } from '../../lib/usuarios';
 import { useFocusEffect } from '@react-navigation/native';
- 
+
 export default function UsuariosListScreen({ navigation }) {
   const { empresa } = useAuthStore();
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
- 
+
   // Cargar usuarios desde Supabase
   const cargarUsuarios = async () => {
     if (!empresa?.id) return;
- 
+
     setCargando(true);
     const usuariosData = await obtenerUsuariosPorEmpresa(empresa.id, true);
     setUsuarios(usuariosData);
     setCargando(false);
   };
- 
+
   // Recargar cuando la pantalla obtiene foco
   useFocusEffect(
     React.useCallback(() => {
       cargarUsuarios();
     }, [empresa?.id])
   );
- 
+
   const usuariosEmpresa = usuarios;
 
   const handleEliminar = (usuario) => {
@@ -65,11 +67,11 @@ export default function UsuariosListScreen({ navigation }) {
       ]
     );
   };
- 
+
   const handleCambiarEstado = async (usuario) => {
     const nuevoEstado = !usuario.activo;
     const exito = await cambiarEstadoUsuario(usuario.id, nuevoEstado);
- 
+
     if (exito) {
       Alert.alert(
         'Éxito',
@@ -120,7 +122,7 @@ export default function UsuariosListScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.toggleButton}
-          onPress={() => cambiarEstadoUsuario(item.id)}
+          onPress={() => handleCambiarEstado(item)}
         >
           <Ionicons
             name={item.activo ? 'close-circle' : 'checkmark-circle'}
@@ -189,6 +191,7 @@ export default function UsuariosListScreen({ navigation }) {
         </Text>
       </View>
 
+      {/* Lista */}
       {cargando ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />

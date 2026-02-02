@@ -9,10 +9,7 @@ import useAuthStore from '../../store/authStore';
 import { obtenerEstadisticasOTs, busesNecesitanMantenimiento } from '../../lib/cronograma';
 
 export default function AdminHomeScreen({ navigation }) {
-  const user = useAuthStore((state) => state.user);
-  const empresaId = useAuthStore((state) => state.empresa?.id);
-  const empresaNombre = useAuthStore((state) => state.empresa?.nombre);
-  const logout = useAuthStore((state) => state.logout);
+  const { user, empresa, logout } = useAuthStore();
   const COLORS = useColores();
 
   const [estadisticas, setEstadisticas] = useState(null);
@@ -20,25 +17,27 @@ export default function AdminHomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!empresaId) return;
+    if (empresa?.id) {
+      cargarDatos();
+    }
+  }, [empresa?.id]); // ← Solo depender del ID, no del objeto completo
 
-    const cargarDatos = async () => {
-      setLoading(true);
-      try {
-        const stats = await obtenerEstadisticasOTs(empresaId);
-        setEstadisticas(stats);
+  async function cargarDatos() {
+    setLoading(true);
+    try {
+      // Obtener estadísticas de OTs
+      const stats = await obtenerEstadisticasOTs(empresa.id);
+      setEstadisticas(stats);
 
-        const buses = await busesNecesitanMantenimiento(empresaId);
-        setBusesUrgentes(buses.filter(b => b.urgencia === 'URGENTE'));
-      } catch (error) {
-        console.error('Error cargando datos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    cargarDatos();
-  }, [empresaId]);
+      // Obtener buses que necesitan mantenimiento urgente
+      const buses = await busesNecesitanMantenimiento(empresa.id);
+      setBusesUrgentes(buses.filter(b => b.urgencia === 'URGENTE'));
+    } catch (error) {
+      console.error('Error cargando datos:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]} edges={['top', 'bottom']}>
@@ -48,7 +47,7 @@ export default function AdminHomeScreen({ navigation }) {
         <Text style={[styles.title, { color: COLORS.text }]}>PANEL EMPRESA</Text>
         <Text style={[styles.subtitle, { color: COLORS.textMuted }]}>Administrador</Text>
         <Text style={[styles.empresaName, { color: COLORS.primary }]}>
-          {empresaNombre || 'Mi Empresa'}
+          {empresa?.nombre || 'Mi Empresa'}
         </Text>
       </View>
 

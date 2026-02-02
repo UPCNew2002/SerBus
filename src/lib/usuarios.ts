@@ -11,7 +11,7 @@
 //
 // ═══════════════════════════════════════════════════════
  
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL } from './supabase';
  
 // ───────────────────────────────────────────────────────
 // TIPOS
@@ -479,5 +479,110 @@ export async function cambiarPassword(
   } catch (error) {
     console.error('❌ Error en cambiarPassword:', error);
     return false;
+  }
+}
+
+/**
+ * Enviar email de recuperación de contraseña (para superadmin resetear password de admin)
+ * @param email - Email del usuario admin
+ * @returns boolean indicando éxito
+ */
+export async function enviarEmailRecuperacion(email: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://tuapp.com/reset-password', // Puedes cambiar esto
+    });
+
+    if (error) {
+      console.error('❌ Error enviando email de recuperación:', error.message);
+      return false;
+    }
+
+    console.log('✅ Email de recuperación enviado a:', email);
+    return true;
+  } catch (error) {
+    console.error('❌ Error en enviarEmailRecuperacion:', error);
+    return false;
+  }
+}
+
+// ───────────────────────────────────────────────────────
+// RESETEAR CONTRASEÑA DE ADMIN (SUPERADMIN)
+// ───────────────────────────────────────────────────────
+
+export interface ResultadoResetPassword {
+  success: boolean;
+  passwordTemporal?: string;
+  username?: string;
+  error?: string;
+}
+
+/**
+ * Resetea la contraseña de un admin y genera una contraseña temporal
+ * Solo puede ser ejecutado por super_admin
+ * Usa Edge Function con Admin API de Supabase
+ *
+ * @param adminId - ID del usuario admin a resetear
+ * @returns Resultado con contraseña temporal generada
+ *
+ * @example
+ * const resultado = await resetearPasswordAdmin('uuid-del-admin');
+ * if (resultado.success) {
+ *   Alert.alert('Contraseña temporal:', resultado.passwordTemporal);
+ * }
+ */
+export async function resetearPasswordAdmin(
+  adminId: string
+): Promise<ResultadoResetPassword> {
+  try {
+    console.log('🔐 Reseteando contraseña de admin:', adminId);
+
+    // Obtener token de sesión actual
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      return {
+        success: false,
+        error: 'No hay sesión activa'
+      };
+    }
+
+    // Obtener URL del proyecto Supabase
+    const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/reset-admin-password`;
+
+    // Llamar a Edge Function
+    const response = await fetch(edgeFunctionUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ adminId }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('❌ Error en Edge Function:', data.error);
+      return {
+        success: false,
+        error: data.error || 'Error al resetear contraseña'
+      };
+    }
+
+    console.log('✅ Contraseña reseteada para:', data.username);
+
+    return {
+      success: true,
+      passwordTemporal: data.passwordTemporal,
+      username: data.username
+    };
+
+  } catch (error: any) {
+    console.error('❌ Error en resetearPasswordAdmin:', error);
+    return {
+      success: false,
+      error: error.message || 'Error desconocido'
+    };
   }
 }

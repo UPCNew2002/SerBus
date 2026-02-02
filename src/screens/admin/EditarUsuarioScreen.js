@@ -19,10 +19,10 @@ import {
   actualizarUsuario,
   verificarUsernameExiste,
 } from '../../lib/usuarios';
- 
+
 export default function EditarUsuarioScreen({ route, navigation }) {
   const { usuarioId } = route.params;
- 
+
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [nombre, setNombre] = useState('');
@@ -30,7 +30,7 @@ export default function EditarUsuarioScreen({ route, navigation }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
- 
+
   // Cargar usuario desde Supabase
   useEffect(() => {
     const cargarUsuario = async () => {
@@ -43,7 +43,7 @@ export default function EditarUsuarioScreen({ route, navigation }) {
       }
       setCargando(false);
     };
- 
+
     cargarUsuario();
   }, [usuarioId]);
 
@@ -52,12 +52,12 @@ export default function EditarUsuarioScreen({ route, navigation }) {
       Alert.alert('Error', 'El nombre completo es obligatorio');
       return;
     }
- 
+
     if (!usuarioNombre.trim()) {
       Alert.alert('Error', 'El nombre de usuario es obligatorio');
       return;
     }
- 
+
     // Verificar si el username ya existe (excluyendo el usuario actual)
     if (usuarioNombre.toLowerCase() !== usuario.username.toLowerCase()) {
       const existe = await verificarUsernameExiste(usuarioNombre);
@@ -66,18 +66,18 @@ export default function EditarUsuarioScreen({ route, navigation }) {
         return;
       }
     }
- 
+
     setLoading(true);
- 
+
     const datosActualizar = {
       nombre: nombre.trim(),
       username: usuarioNombre.trim().toLowerCase(),
     };
- 
+
     const exito = await actualizarUsuario(usuarioId, datosActualizar);
- 
+
     setLoading(false);
- 
+
     if (exito) {
       Alert.alert('Éxito', 'Usuario actualizado correctamente', [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -86,6 +86,7 @@ export default function EditarUsuarioScreen({ route, navigation }) {
       Alert.alert('Error', 'No se pudo actualizar el usuario');
     }
   };
+
   if (cargando) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -94,6 +95,7 @@ export default function EditarUsuarioScreen({ route, navigation }) {
       </View>
     );
   }
+
   if (!usuario) {
     return (
       <View style={styles.container}>

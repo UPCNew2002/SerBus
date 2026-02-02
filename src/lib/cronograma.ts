@@ -379,6 +379,7 @@ export async function obtenerBusesEmpresa(
     return [];
   }
 }
+
 /**
  * Crear un nuevo bus en la flota
  *
@@ -409,13 +410,13 @@ export async function crearBus(datos: {
 }): Promise<Bus | null> {
   try {
     console.log('🚌 Creando nuevo bus:', datos.placa);
- 
+
     const { data: bus, error } = await supabase
       .from('buses')
       .insert({
         empresa_id: datos.empresa_id,
         placa: datos.placa,
-        vin: datos.vin || null,
+        vin: datos.vin || '', // String vacío en lugar de null
         marca: datos.marca || null,
         modelo: datos.modelo || null,
         anio: datos.anio || null,
@@ -425,12 +426,12 @@ export async function crearBus(datos: {
       })
       .select()
       .single();
- 
+
     if (error) {
       console.error('❌ Error creando bus:', error.message);
       return null;
     }
- 
+
     console.log('✅ Bus creado exitosamente:', bus.placa);
     return bus;
   } catch (error) {
@@ -606,12 +607,12 @@ export async function obtenerTrabajos(empresaId: number): Promise<any[]> {
       .eq('empresa_id', empresaId)
       .eq('activo', true)
       .order('nombre', { ascending: true });
- 
+
     if (error) {
       console.error('Error obteniendo trabajos:', error.message);
       return [];
     }
- 
+
     return data || [];
   } catch (error) {
     console.error('Error obteniendo trabajos:', error);
@@ -643,7 +644,7 @@ export async function crearTrabajo(datos: {
 }): Promise<any | null> {
   try {
     console.log('🔧 Creando nuevo trabajo:', datos.nombre);
- 
+
     const { data: trabajo, error } = await supabase
       .from('trabajos')
       .insert({
@@ -655,12 +656,12 @@ export async function crearTrabajo(datos: {
       })
       .select()
       .single();
- 
+
     if (error) {
       console.error('❌ Error creando trabajo:', error.message);
       return null;
     }
- 
+
     console.log('✅ Trabajo creado exitosamente:', trabajo.nombre);
     return trabajo;
   } catch (error) {
@@ -668,6 +669,38 @@ export async function crearTrabajo(datos: {
     return null;
   }
 }
+
+/**
+ * Eliminar un trabajo (soft delete)
+ *
+ * @param trabajoId - ID del trabajo
+ * @returns true si se eliminó correctamente
+ *
+ * @example
+ * const eliminado = await eliminarTrabajo(1);
+ */
+export async function eliminarTrabajo(trabajoId: number): Promise<boolean> {
+  try {
+    console.log('🗑️ Eliminando trabajo:', trabajoId);
+
+    const { error } = await supabase
+      .from('trabajos')
+      .update({ activo: false })
+      .eq('id', trabajoId);
+
+    if (error) {
+      console.error('❌ Error eliminando trabajo:', error.message);
+      return false;
+    }
+
+    console.log('✅ Trabajo eliminado exitosamente');
+    return true;
+  } catch (error) {
+    console.error('❌ Error en eliminarTrabajo:', error);
+    return false;
+  }
+}
+
 
 /**
  * Obtener detalle completo de una OT con trabajos
@@ -705,38 +738,6 @@ export async function obtenerOTCompleta(otId: number): Promise<any | null> {
   } catch (error) {
     console.error('Error obteniendo OT completa:', error);
     return null;
-  }
-}
-
-
-/**
- * Eliminar un trabajo (soft delete)
- *
- * @param trabajoId - ID del trabajo
- * @returns true si se eliminó correctamente
- *
- * @example
- * const eliminado = await eliminarTrabajo(1);
- */
-export async function eliminarTrabajo(trabajoId: number): Promise<boolean> {
-  try {
-    console.log('🗑️ Eliminando trabajo:', trabajoId);
- 
-    const { error } = await supabase
-      .from('trabajos')
-      .update({ activo: false })
-      .eq('id', trabajoId);
- 
-    if (error) {
-      console.error('❌ Error eliminando trabajo:', error.message);
-      return false;
-    }
- 
-    console.log('✅ Trabajo eliminado exitosamente');
-    return true;
-  } catch (error) {
-    console.error('❌ Error en eliminarTrabajo:', error);
-    return false;
   }
 }
 

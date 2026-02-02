@@ -211,12 +211,13 @@ const handleGuardar = async () => {
       Alert.alert('Error', 'El número de OT es obligatorio');
       return;
     }
- // Validar que sea exactamente 7 dígitos
+
+    // Validar que sea exactamente 7 dígitos
     if (numeroOT.length !== 7) {
       Alert.alert('Error', 'El número de OT debe tener exactamente 7 dígitos');
       return;
     }
- 
+
     // Validar que sea solo números
     if (!/^\d{7}$/.test(numeroOT)) {
       Alert.alert('Error', 'El número de OT solo debe contener números');
@@ -353,7 +354,7 @@ const handleGuardar = async () => {
  
         {/* Número OT */}
         <View style={styles.inputGroup}>
-     <Text style={styles.label}>NÚMERO DE OT (7 dígitos) *</Text>
+          <Text style={styles.label}>NÚMERO DE OT (7 dígitos) *</Text>
           <View style={styles.inputContainer}>
             <View style={styles.inputIconBox}>
               <Ionicons name="document-text" size={20} color={COLORS.text} />
@@ -432,7 +433,8 @@ const handleGuardar = async () => {
             {busSeleccionado ? 'Auto-completado desde bus seleccionado' : 'Debes seleccionar un bus primero'}
           </Text>
         </View>
- {/* VIN - OPCIONAL */}
+ 
+        {/* VIN - OPCIONAL */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>VIN (Opcional)</Text>
           <View style={[styles.inputContainer, !busSeleccionado && styles.inputDisabled]}>
@@ -454,7 +456,7 @@ const handleGuardar = async () => {
           </View>
           <Text style={styles.helperText}>
             {busSeleccionado ? 'Auto-completado desde bus seleccionado' : 'Debes seleccionar un bus primero'}
-              </Text>
+          </Text>
         </View>
  
         {/* Kilometraje */}

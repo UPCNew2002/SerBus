@@ -10,41 +10,86 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
+  Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColores } from '../../hooks/useColores';
 import { obtenerTodasLasEmpresas } from '../../lib/empresas';
- 
+import { resetearPasswordAdmin } from '../../lib/usuarios';
+
 export default function GestionarAdminsScreen({ navigation }) {
   const COLORS = useColores();
   const [empresas, setEmpresas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
- 
+
   useEffect(() => {
     cargarEmpresas();
   }, []);
- 
+
   const cargarEmpresas = async () => {
     setCargando(true);
     const datos = await obtenerTodasLasEmpresas();
     setEmpresas(datos);
     setCargando(false);
   };
+
   // Filtrar empresas por búsqueda
   const empresasFiltradas = empresas.filter(
     (e) =>
-     e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       e.adminUsuario.toLowerCase().includes(busqueda.toLowerCase()) ||
       e.ruc.includes(busqueda)
   );
- 
-  const handleResetPassword = (empresa) => {
+
+  const handleResetPassword = async (empresa) => {
+    // Verificar que tengamos el ID del admin
+    if (!empresa.adminId) {
+      Alert.alert(
+        '❌ Error',
+        `No se pudo obtener el ID del administrador.\n\nUsuario: ${empresa.adminUsuario}\n\nPor favor, contacta al administrador del sistema.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       '🔐 Resetear Contraseña',
-      `Esta funcionalidad requiere actualizar la contraseña en Supabase Auth.\n\nPor ahora, contacta al administrador del sistema para resetear la contraseña del usuario: ${empresa.adminUsuario}`,
-      [{ text: 'Entendido' }]
+      `Se generará una contraseña temporal para:\n\nEmpresa: ${empresa.nombre}\nAdmin: ${empresa.adminNombre}\nUsuario: ${empresa.adminUsuario}\n\n¿Continuar?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Generar',
+          style: 'default',
+          onPress: async () => {
+            const resultado = await resetearPasswordAdmin(empresa.adminId);
+            if (resultado.success) {
+              // Mostrar contraseña temporal en un Alert grande con opción de copiar
+              Alert.alert(
+                '✅ Contraseña Temporal Generada',
+                `Usuario: ${resultado.username}\n\n🔑 CONTRASEÑA TEMPORAL:\n${resultado.passwordTemporal}\n\n⚠️ IMPORTANTE:\n• Copia esta contraseña y pásala al administrador\n• El admin deberá cambiarla en su primer inicio de sesión\n• Esta contraseña solo se muestra una vez`,
+                [
+                  {
+                    text: '📋 Copiar',
+                    onPress: () => {
+                      Clipboard.setString(resultado.passwordTemporal);
+                      Alert.alert('✅', 'Contraseña copiada al portapapeles');
+                    },
+                  },
+                  { text: 'Cerrar', style: 'cancel' }
+                ]
+              );
+            } else {
+              Alert.alert(
+                '❌ Error',
+                `No se pudo resetear la contraseña.\n\nError: ${resultado.error}`,
+                [{ text: 'OK' }]
+              );
+            }
+          },
+        },
+      ]
     );
   };
 
@@ -148,7 +193,7 @@ export default function GestionarAdminsScreen({ navigation }) {
       <View style={[styles.infoBox, { backgroundColor: COLORS.card, borderLeftColor: COLORS.statusWarning, borderColor: COLORS.border }]}>
         <Ionicons name="information-circle" size={20} color={COLORS.statusWarning} />
         <Text style={[styles.infoText, { color: COLORS.textLight }]}>
-          Al resetear una contraseña, se generará la clave temporal "reset123"
+          Al resetear una contraseña, se generará una contraseña temporal que deberás copiar y entregar al administrador
         </Text>
       </View>
 

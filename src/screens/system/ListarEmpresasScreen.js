@@ -15,22 +15,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
 import { obtenerTodasLasEmpresas, cambiarEstadoEmpresa } from '../../lib/empresas';
- 
+
 export default function ListarEmpresasScreen({ navigation }) {
   const [empresas, setEmpresas] = useState([]);
   const [cargando, setCargando] = useState(true);
- 
+
   useEffect(() => {
     cargarEmpresas();
   }, []);
- 
+
   const cargarEmpresas = async () => {
     setCargando(true);
     const datos = await obtenerTodasLasEmpresas();
     setEmpresas(datos);
     setCargando(false);
   };
- 
+
   const handleCambiarEstado = async (empresaId) => {
     const exito = await cambiarEstadoEmpresa(empresaId);
     if (exito) {
@@ -48,7 +48,7 @@ export default function ListarEmpresasScreen({ navigation }) {
           <Ionicons name="business" size={24} color={COLORS.primary} />
         </View>
         <View style={styles.empresaInfo}>
-<Text style={styles.empresaNombre}>{item.nombre}</Text>
+          <Text style={styles.empresaNombre}>{item.nombre}</Text>
           <Text style={styles.empresaRuc}>RUC: {item.ruc}</Text>
           <Text style={styles.empresaFecha}>
             Creada: {new Date(item.created_at).toLocaleDateString('es-PE')}
@@ -65,13 +65,13 @@ export default function ListarEmpresasScreen({ navigation }) {
           </Text>
         </View>
       </View>
- 
+
       <View style={styles.empresaFooter}>
   <View style={styles.adminInfo}>
     <Ionicons name="person" size={14} color={COLORS.textMuted} />
     <Text style={styles.adminEmail}>@{item.adminUsuario}</Text>
   </View>
- 
+
   <View style={styles.actionsRow}>
     <TouchableOpacity
       style={styles.editButton}
@@ -80,7 +80,7 @@ export default function ListarEmpresasScreen({ navigation }) {
       <Ionicons name="create" size={16} color={COLORS.accent} />
       <Text style={styles.editText}>Editar</Text>
     </TouchableOpacity>
- 
+
     <TouchableOpacity
       style={styles.toggleButton}
       onPress={() => handleCambiarEstado(item.id)}
@@ -137,7 +137,7 @@ export default function ListarEmpresasScreen({ navigation }) {
           <Text style={styles.statLabel}>Inactivas</Text>
         </View>
       </View>
- 
+
       {/* Indicador de carga */}
       {cargando ? (
         <View style={styles.loadingContainer}>
@@ -318,17 +318,6 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     fontWeight: '600',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    marginTop: 15,
-  },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 60,
@@ -368,5 +357,16 @@ editText: {
   emptyButtonText: {
     color: COLORS.text,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    marginTop: 15,
   },
 });
