@@ -22,10 +22,10 @@ import useAuthStore from '../../store/authStore';
 export default function CambiarPasswordScreen({ navigation, route }) {
   const COLORS = useColores();
  const { user: userFromStore, logout } = useAuthStore();
-  const { primerLogin = false, userData } = route.params || {};
+  const { primerLogin = false, passwordTemporal = false, userData } = route.params || {};
  
-  // Si es primer login, usar userData de los parámetros; si no, usar del store
-  const user = primerLogin ? userData : userFromStore;
+  // Si es primer login o password temporal, usar userData de los parámetros; si no, usar del store
+  const user = (primerLogin || passwordTemporal) ? userData : userFromStore;
  
   const [passwordActual, setPasswordActual] = useState('');
   const [passwordNueva, setPasswordNueva] = useState('');
@@ -108,10 +108,13 @@ export default function CambiarPasswordScreen({ navigation, route }) {
         return;
       }
  
-      // Marcar que ya no debe cambiar contraseña
+      // Marcar que ya no debe cambiar contraseña ni tiene password temporal
       const { error: perfilError } = await supabase
         .from('perfiles')
-        .update({ debe_cambiar_password: false })
+        .update({
+          debe_cambiar_password: false,
+          password_temporal: false
+        })
         .eq('id', user.id);
  
       if (perfilError) {
@@ -122,8 +125,8 @@ export default function CambiarPasswordScreen({ navigation, route }) {
  
        setLoading(false);
  
-      if (primerLogin) {
-        // Si es primer login, cerrar sesión y mostrar mensaje
+       if (primerLogin || passwordTemporal) {
+        // Si es primer login o password temporal, cerrar sesión y mostrar mensaje
         console.log('🚪 Cerrando sesión...');
  
         // Cerrar sesión de Supabase primero
@@ -171,7 +174,7 @@ export default function CambiarPasswordScreen({ navigation, route }) {
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
           {/* Header */}
           <View style={styles.header}>
-            {!primerLogin && (
+          {!primerLogin && !passwordTemporal && (
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => navigation.goBack()}
@@ -181,11 +184,16 @@ export default function CambiarPasswordScreen({ navigation, route }) {
             )}
             <Ionicons name="key" size={50} color={COLORS.text} />
             <Text style={[styles.title, { color: COLORS.text }]}>
-              {primerLogin ? 'CAMBIAR CONTRASEÑA' : 'ACTUALIZAR CONTRASEÑA'}
+              {(primerLogin || passwordTemporal) ? 'CAMBIAR CONTRASEÑA' : 'ACTUALIZAR CONTRASEÑA'}
             </Text>
             {primerLogin && (
               <Text style={[styles.subtitle, { color: COLORS.textLight }]}>
                 Por seguridad, debes cambiar tu contraseña
+              </Text>
+            )}
+            {passwordTemporal && (
+              <Text style={[styles.subtitle, { color: COLORS.textLight }]}>
+                Tu contraseña fue reseteada. Cámbiala por una nueva
               </Text>
             )}
           </View>
@@ -205,6 +213,15 @@ export default function CambiarPasswordScreen({ navigation, route }) {
               </View>
             )}
  
+            {passwordTemporal && (
+              <View style={[styles.infoBox, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}>
+                <Ionicons name="alert-circle" size={24} color={COLORS.statusError} />
+                <Text style={[styles.infoText, { color: COLORS.textLight }]}>
+                  Tu contraseña fue reseteada por el administrador. Por seguridad, debes cambiarla inmediatamente.
+                </Text>
+              </View>
+            )}
+
             {/* Usuario */}
             <View style={[styles.userBox, { backgroundColor: COLORS.card, borderColor: COLORS.border }]}>
               <Ionicons name="person" size={20} color={COLORS.accent} />

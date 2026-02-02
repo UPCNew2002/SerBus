@@ -65,9 +65,10 @@ export default function LoginScreen() {
 
       console.log('✅ Perfil obtenido:', perfil);
 
-            // Verificar si debe cambiar contraseña
-      if (perfil.debe_cambiar_password) {
-        console.log('🔐 Usuario debe cambiar contraseña - redirigiendo...');
+ // Verificar si debe cambiar contraseña (nuevo usuario) o tiene contraseña temporal (reseteada)
+      if (perfil.debe_cambiar_password || perfil.password_temporal) {
+        const esPasswordTemporal = perfil.password_temporal === true;
+        console.log(esPasswordTemporal ? '🔐 Usuario tiene contraseña temporal - redirigiendo...' : '🔐 Usuario debe cambiar contraseña - redirigiendo...');
  
         // NO hacer login, solo pasar los datos como parámetros
         const userData = {
@@ -82,7 +83,8 @@ export default function LoginScreen() {
         // Navegar a cambiar contraseña SIN hacer login
         setLoading(false);
         navigation.navigate('CambiarPassword', {
-          primerLogin: true,
+          primerLogin: !esPasswordTemporal, // true si es primer login, false si es password temporal
+          passwordTemporal: esPasswordTemporal, // flag para mostrar mensaje diferente
           userData: userData
         });
         return;
