@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import useOTsStore from '../../store/otsStore';
+import { useOTs } from '../../hooks/useOTs';
 import useAuthStore from '../../store/authStore';
 import { useOTs } from '../../hooks/useOTs';
 
